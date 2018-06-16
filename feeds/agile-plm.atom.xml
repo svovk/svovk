@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Agile PLM</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/agile-plm.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-05-19T00:14:00+03:00</updated><entry><title>Agile PLM Dashboard Optional Tabs - database tables</title><link href="https://svovk.github.io/agile-plm-dashboard-optional-tabs-database-tables.html" rel="alternate"></link><published>2018-05-19T00:14:00+03:00</published><updated>2018-05-19T00:14:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-05-19:/agile-plm-dashboard-optional-tabs-database-tables.html</id><summary type="html">&lt;p&gt;Recently I was working on a data issue which prevented a person from using Optional Tab 1 of his Dashboard. When the user clicked on the tab, Agile showed "Object does not exists" error and nothing else appeared. Researching this issue brought me to understanding of some relations in Agile …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Recently I was working on a data issue which prevented a person from using Optional Tab 1 of his Dashboard. When the user clicked on the tab, Agile showed "Object does not exists" error and nothing else appeared. Researching this issue brought me to understanding of some relations in Agile DB Schema which I would like to discuss in this post.&lt;/p&gt;
+&lt;p&gt;I don't think Dashboard DB structure is something that Oracle changes frequently, but I should mention that I worked on the issue in Agile PLM 9.3.6.4 and didn't validate if all relations are the same in any other PLM versions.&lt;/p&gt;
+&lt;h2&gt;Dashboard&lt;/h2&gt;
+&lt;p&gt;As for many other setup entities, database schema journey starts with one of the most basic tables in Agile PLM schema - &lt;code&gt;nodetable&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lpad&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;+ &amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;||&lt;/span&gt; &lt;span class="n"&gt;description&lt;/span&gt; &lt;span class="n"&gt;node&lt;/span&gt;
+&lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;nodetable&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;
+&lt;span class="k"&gt;CONNECT&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;parentId&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;PRIOR&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;
+&lt;span class="k"&gt;START&lt;/span&gt; &lt;span class="k"&gt;WITH&lt;/span&gt; &lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;description&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;Dashboard Management&amp;#39;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This query shows us hierarchy under Dashboard Management node &lt;code&gt;(Java Client) Admin -&amp;gt; System Settings -&amp;gt; Dashboard Management&lt;/code&gt;. Here is what it shows in my environment:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ID          NODE
+----------  ----------------------
+2000000001  + Dashboard Management  
+...
+2000000111   + Optional Tab 1
+2000000112    + Table 1
+2000000113    + Table 2
+2000000114    + Table 3
+2000000115    + Table 4
+...
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now we have node ids and may query what Optional Tab 1 tables actually display:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;tableId&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;queryId&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;tableName&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;userId&lt;/span&gt;
+&lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;query_table&lt;/span&gt;
+&lt;span class="k"&gt;WHERE&lt;/span&gt; &lt;span class="n"&gt;tableId&lt;/span&gt; &lt;span class="k"&gt;IN&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;2000000111&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2000000112&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2000000113&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2000000114&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+  &lt;span class="k"&gt;AND&lt;/span&gt; &lt;span class="n"&gt;userId&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;userId&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Few important points about &lt;code&gt;query_table&lt;/code&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;As you know, each user sets content of his/her optional tab tables. That is why &lt;code&gt;query_table&lt;/code&gt; has &lt;code&gt;userId&lt;/code&gt; column (it is a foreign key to &lt;code&gt;agileuser&lt;/code&gt; table).&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;queryId&lt;/code&gt; is a foreign key to &lt;code&gt;query&lt;/code&gt; table&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;tableName&lt;/code&gt; is a user-friendly name of the table&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Note: when you define a custom dashboard table with query for all users &lt;code&gt;userId&lt;/code&gt; will be set to NULL.&lt;/p&gt;
+&lt;h2&gt;Issue&lt;/h2&gt;
+&lt;p&gt;In my case, root cause of the error was following - one of the query ids specified in &lt;code&gt;query_table&lt;/code&gt; wasn't actually defined in &lt;code&gt;query&lt;/code&gt; table. To fix the problem, I deleted &lt;code&gt;query_table&lt;/code&gt; row that had inconsistent data which moved the tab table to no-query-assigned state.&lt;/p&gt;
+&lt;p&gt;Please note that it is not recommended to apply any data fixes to Agile Database Schema without confirming with Oracle that they are valid.&lt;/p&gt;
+&lt;h2&gt;Other tables to check&lt;/h2&gt;
+&lt;p&gt;When you see an issue like that it always worth to check other tables that might have orphan records referring to the same missing row. Here are few additional tables that might refer to a query id:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;select_list&lt;/code&gt; table contains information about fields to be displayed&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;select * select_list where query_id = &amp;lt;queryId&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;foldering&lt;/code&gt; table stores information about folders under which queries are stored&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;select * from foldering where objectid = &amp;lt;queryId&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;criteria&lt;/code&gt; table contains information about query filters&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;select * from criteria where query_id = &amp;lt;queryId&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ul&gt;</content><category term="Agile PLM"></category><category term="Agile Database Schema"></category></entry><entry><title>Weblogic Data Sources in Agile PLM Groovy Handlers</title><link href="https://svovk.github.io/weblogic-data-sources-in-agile-plm-groovy-handlers.html" rel="alternate"></link><published>2018-05-09T10:20:00+03:00</published><updated>2018-05-09T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-05-09:/weblogic-data-sources-in-agile-plm-groovy-handlers.html</id><summary type="html">&lt;p&gt;In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn't recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending …&lt;/p&gt;</summary><content type="html">&lt;p&gt;In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn't recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending on the particular integration case it might not be the best option to retrieve the data directly from external DB (but I won't discuss different approaches here).&lt;/p&gt;
+&lt;h2&gt;Configure JDBC Data Source&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Log in Weblogic Administration Console&lt;/p&gt;
+&lt;p&gt;&lt;img alt="WebLogic Admin Console" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_0.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;To start configuration change press 'Lock &amp;amp; Edit'&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Lock configuration for edit" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_1a.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Navigate Services -&amp;gt; Data Sources in your domain (Domain Structure pane)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Click New button and choose Generic Data Source&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_2.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Specify Name, JNDI Name, Database Type and click Next &lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Names" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_3.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Choose DB driver to be used and click Next&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Driver" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_4.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Leave transaction options default&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Transaction Options" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_5.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Populate DB connectivity data - database name, server name, port, account and press Next&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Connection" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_6.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Test configuration and click Next&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Test" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_7.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;On the next screen choose servers to deploy created Data Source and press Finish&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_8.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;To make the changes effective press 'Activate Changes' button&lt;/p&gt;
+&lt;p&gt;&lt;img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_9.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Use created Data Source in Groovy Handler&lt;/h2&gt;
+&lt;p&gt;Usage is actually pretty straightforward, you may find an example below&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;com.agile.agileDSL.ScriptObj.IBaseScriptObj&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;groovy.sql.Sql&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;javax.naming.InitialContext&lt;/span&gt;
+
+&lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;invokeScript&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;IBaseScriptObj&lt;/span&gt; &lt;span class="n"&gt;obj&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+
+    &lt;span class="n"&gt;Sql&lt;/span&gt; &lt;span class="n"&gt;sql&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;Sql&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;InitialContext&lt;/span&gt;&lt;span class="o"&gt;().&lt;/span&gt;&lt;span class="na"&gt;lookup&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;My JDBC Data Source&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;))&lt;/span&gt;
+
+    &lt;span class="n"&gt;sql&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;eachRow&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;select 1  test from dual&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;){&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt;
+        &lt;span class="n"&gt;obj&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;logDebug&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;selected number is ${row.test}&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note that we construct &lt;code&gt;Sql&lt;/code&gt; using the DataSource. Each operation will use a Connection from the DataSource pool and close it when the operation is completed putting it back into the pool. This makes explit &lt;code&gt;sql.close()&lt;/code&gt; call not required.&lt;/p&gt;</content><category term="Agile PLM"></category><category term="Groovy"></category><category term="Weblogic"></category><category term="JDBC"></category><category term="JNDI"></category></entry><entry><title>Analyzing Agile PLM log files with Python</title><link href="https://svovk.github.io/analyzing-agile-plm-log-files-with-python.html" rel="alternate"></link><published>2018-05-07T10:20:00+03:00</published><updated>2018-05-07T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-05-07:/analyzing-agile-plm-log-files-with-python.html</id><summary type="html">&lt;p&gt;Sometimes it is useful to get an overview of log files generated by a system and Agile PLM is not an exception. For logging Agile uses &lt;em&gt;log4j&lt;/em&gt; library which is capable of producing very parsing-friendly formats. Although in practice the system is usually configured to generate plain text files in …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Sometimes it is useful to get an overview of log files generated by a system and Agile PLM is not an exception. For logging Agile uses &lt;em&gt;log4j&lt;/em&gt; library which is capable of producing very parsing-friendly formats. Although in practice the system is usually configured to generate plain text files in which log entries look like one below&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;2000-10-10 00:01:21,043 &amp;lt;ChangeHistoryService:ERROR&amp;gt;    process change notification failed:
+ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+java.sql.BatchUpdateException: ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+    at oracle.jdbc.driver.OraclePreparedStatement.executeBatch(OraclePreparedStatement.java:10401)
+    at oracle.jdbc.driver.OracleStatementWrapper.executeBatch(OracleStatementWrapper.java:230)
+    at weblogic.jdbc.wrapper.PreparedStatement.executeBatch(PreparedStatement.java:205)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertHistoryRecords(BaseRouteDAO.java:4797)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertHistoryRecord(BaseRouteDAO.java:4741)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertChangeHistory(BaseRouteDAO.java:4720)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertChangeHistory(BaseRouteDAO.java:4678)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.logTAHistory(BaseRouteDAO.java:402)
+    at com.agile.pc.cmserver.notification.ChangeHistoryDAO.logTAHistories(ChangeHistoryDAO.java:559)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.transferSignOffs(ChangeHistoryService.java:379)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.processChangeHistory(ChangeHistoryService.java:286)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.processChangeHistories(ChangeHistoryService.java:119)
+    at com.agile.pc.cmserver.notification.NotifyTask.processChangeHistory(NotifyTask.java:566)
+    at com.agile.pc.cmserver.notification.NotifyTask.run(NotifyTask.java:214)
+    at java.util.TimerThread.mainLoop(Timer.java:555)
+    at java.util.TimerThread.run(Timer.java:505)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Just for reference, it was produced by appender with following configuration&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;appender&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;AgileLog&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;org.apache.log4j.RollingFileAppender&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;param&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;File&amp;quot;&lt;/span&gt;   &lt;span class="na"&gt;value=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="cp"&gt;${&lt;/span&gt;&lt;span class="n"&gt;agile&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dir&lt;/span&gt;&lt;span class="cp"&gt;}&lt;/span&gt;&lt;span class="s"&gt;/agile.log&amp;quot;&lt;/span&gt; &lt;span class="nt"&gt;/&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;layout&lt;/span&gt; &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;org.apache.log4j.PatternLayout&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+        &lt;span class="nt"&gt;&amp;lt;param&lt;/span&gt; &lt;span class="na"&gt;name=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;ConversionPattern&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;value=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;%d\t&amp;amp;lt;%c{1}:%p&amp;amp;gt;\t%m\n&amp;quot;/&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;/layout&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;/appender&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Definitely, for automated log file analysis, it is better to reconfigure log4j. Although, mentioned layout is still something we may parse and process. Well, it's not the best option but sometimes you don't have time to wait until new log files will be generated. Let's go through one example.&lt;/p&gt;
+&lt;h2&gt;Log files to be analyzed&lt;/h2&gt;
+&lt;p&gt;Agile PLM produces a number of log files. In this analysis, I will use only one of them: &lt;code&gt;agile.log&lt;/code&gt;. This log file is generated by &lt;code&gt;AgileLog&lt;/code&gt; appender which is used by various logging categories throughout &lt;code&gt;log.xml&lt;/code&gt; configuration.&lt;/p&gt;
+&lt;h2&gt;Preprocessing&lt;/h2&gt;
+&lt;p&gt;Concatenate all the files we are going to process &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;agile.log
+agile.log.1
+agile.log.2
+agile.log.3
+agile.log.4
+agile.log.5
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;into a one file&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cat agile.log* &amp;gt; agile_all_logs
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;after that, let's convert &lt;code&gt;agile_all_logs&lt;/code&gt; into CSV format which is much better for further processing. Here is a python script for it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ch"&gt;#!/usr/bin/env python3&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;re&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;csv&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;os&lt;/span&gt;
+
+&lt;span class="n"&gt;input_file&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;in/agile_all_logs&amp;#39;&lt;/span&gt;
+&lt;span class="n"&gt;output_file&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;out/agile_all_logs.csv&amp;#39;&lt;/span&gt;
+
+&lt;span class="n"&gt;output_dir&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dirname&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output_file&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exists&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output_dir&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;makedirs&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output_dir&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;output_file&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;w&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;newline&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;outf&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;csv_writer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writer&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;outf&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;quoting&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;csv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;QUOTE_MINIMAL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lineterminator&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;processing &amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="n"&gt;input_file&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;...&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;input_file&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;r&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;inp&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="c1"&gt;# variable to store and accumulate logical log entry&lt;/span&gt;
+        &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="n"&gt;line_num&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;inp&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;line_num&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+            &lt;span class="c1"&gt;# we consider row that starts with YYYY-MM-DD date as a start&lt;/span&gt;
+            &lt;span class="c1"&gt;# of new log entry&lt;/span&gt;
+            &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;re&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;match&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="sa"&gt;r&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;\d{4}-\d{2}-\d{2}&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                        &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rstrip&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; 
+                        &lt;span class="n"&gt;csv_writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writerow&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+                    &lt;span class="c1"&gt;# number of entries separated with tab&lt;/span&gt;
+                    &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;maxsplit&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;
+            &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;IndexError&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Warning IndexError on line #&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_num&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+                &lt;span class="c1"&gt;# skip existing content&lt;/span&gt;
+                &lt;span class="n"&gt;row&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+
+        &lt;span class="n"&gt;csv_writer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;writerow&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;row&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After the processing our log entries should look like following&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;2000-10-10,&amp;quot;00:01:21,043&amp;quot;,&amp;lt;ChangeHistoryService:ERROR&amp;gt;,&amp;quot;process change notification failed: 
+ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+java.sql.BatchUpdateException: ORA-00001: unique constraint (AGILE.CHANGE_HISTORY_PK) violated
+
+    at oracle.jdbc.driver.OraclePreparedStatement.executeBatch(OraclePreparedStatement.java:10401)
+    at oracle.jdbc.driver.OracleStatementWrapper.executeBatch(OracleStatementWrapper.java:230)
+    at weblogic.jdbc.wrapper.PreparedStatement.executeBatch(PreparedStatement.java:205)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertHistoryRecords(BaseRouteDAO.java:4797)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertHistoryRecord(BaseRouteDAO.java:4741)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertChangeHistory(BaseRouteDAO.java:4720)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.insertChangeHistory(BaseRouteDAO.java:4678)
+    at com.agile.pc.cmserver.base.BaseRouteDAO.logTAHistory(BaseRouteDAO.java:402)
+    at com.agile.pc.cmserver.notification.ChangeHistoryDAO.logTAHistories(ChangeHistoryDAO.java:559)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.transferSignOffs(ChangeHistoryService.java:379)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.processChangeHistory(ChangeHistoryService.java:286)
+    at com.agile.pc.cmserver.notification.ChangeHistoryService.processChangeHistories(ChangeHistoryService.java:119)
+    at com.agile.pc.cmserver.notification.NotifyTask.processChangeHistory(NotifyTask.java:566)
+    at com.agile.pc.cmserver.notification.NotifyTask.run(NotifyTask.java:214)
+    at java.util.TimerThread.mainLoop(Timer.java:555)
+    at java.util.TimerThread.run(Timer.java:505)&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Analysis&lt;/h2&gt;
+&lt;p&gt;In this part, we will generate a summary table showing top error messages. To do it we will use python data analysis library called &lt;em&gt;Pandas&lt;/em&gt;. It allows us do the whole analysis in few simple steps.&lt;/p&gt;
+&lt;h4&gt;1. Import&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;pandas&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;pd&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;numpy&lt;/span&gt; &lt;span class="kn"&gt;as&lt;/span&gt; &lt;span class="nn"&gt;np&lt;/span&gt;
+
+&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_csv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;out/agile_all_logs.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;names&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;time&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;source&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;message&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="n"&gt;parse_dates&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;at this stage imported data frame has following format&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180507_agile_plm_log_analisys/initial_data_frame.png" width="100%" alt="initial data frame format"&gt;&lt;/p&gt;
+&lt;h4&gt;2. Adjust&lt;/h4&gt;
+&lt;p&gt;In this step we&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;split 'source' column into 2 columns&lt;/li&gt;
+&lt;li&gt;may also drop columns that will not be included in the analysis &lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;tmp&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;source&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;str&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extract&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;lt;(\w+):(\w+)&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expand&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;class&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tmp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;log_level&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tmp&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;drop&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;labels&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;source&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;date&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;time&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;axis&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180507_agile_plm_log_analisys/adjusted_data_frame.png" width="80%" alt="initial data frame format"&gt;&lt;/p&gt;
+&lt;h4&gt;3. Group&lt;/h4&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# group the data by class, log_leve, and message and export to csv file&lt;/span&gt;
+&lt;span class="n"&gt;grouped&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;groupby&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;by&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;class&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;log_level&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;message&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;\
+    &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;\
+    &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;reset_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;counts&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort_values&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;by&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;counts&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ascending&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now we see top log entries&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180507_agile_plm_log_analisys/result_data_frame.png" width="80%" alt="initial data frame format"&gt;&lt;/p&gt;
+&lt;h4&gt;4. Export&lt;/h4&gt;
+&lt;p&gt;We might also export results&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;grouped&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;to_csv&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;out/summary.csv&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</content><category term="Agile PLM"></category><category term="Python"></category><category term="Pandas"></category></entry><entry><title>How to set up Eclipse for developing Agile PLM Script Event Handlers</title><link href="https://svovk.github.io/how-to-set-up-eclipse-for-developing-agile-plm-script-event-handlers.html" rel="alternate"></link><published>2018-05-03T22:30:00+03:00</published><updated>2018-05-03T22:30:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-05-03:/how-to-set-up-eclipse-for-developing-agile-plm-script-event-handlers.html</id><summary type="html">&lt;p&gt;Groovy Script PXs were introduced in Agile 9.3.0 and since then conquered the hearts of many Agile PLM users. I find myself using Groovy Scripts very frequently as it allows deliver product faster and make your code way more expressive. In this post, I will go through steps …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Groovy Script PXs were introduced in Agile 9.3.0 and since then conquered the hearts of many Agile PLM users. I find myself using Groovy Scripts very frequently as it allows deliver product faster and make your code way more expressive. In this post, I will go through steps to set up your Eclipse IDE for Groovy PX Development.&lt;/p&gt;
+&lt;h3&gt;1. Install Groovy-Eclipse plugin into your Eclipse IDE&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Visit Groovy-Eclipse GitHub wiki page: &lt;a href="https://github.com/groovy/groovy-eclipse/wiki"&gt;Groovy-Eclipse&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Copy installation URL for your Eclipse version from Releases or Snapshot Builds section&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/groovy_eclipse_snapshot_builds.png" width="50%" alt="Groovy plugin snapshots"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Open Eclipse and navigate 'Help -&gt;Install New Software...' from the top menu&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/install_new_software.png" width="25%" alt="Eclipse install new software"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Paste copied URL and press Enter&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/available_software2.png" width="50%" alt="Eclipse available software window"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Check 'Groovy-Eclipse Feature' and compilers to be used&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/available_software2.png" width="50%" alt="Eclipse available software window 2"&gt;&lt;/p&gt;
+&lt;p&gt;Note: Most recent Agile version at the moment is 9.3.6.4 and it uses groovy-2.4.6. You may find your Groovy version by executing following from your Agile PLM home&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;find . -iname groovy*
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;2. Create Groovy Project&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Navigate File -&amp;gt; New -&amp;gt; Other&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/file_new_other.png" width="50%" alt="File -&gt; New -&amp;gt; Other..."&amp;gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Select "Groovy Project"&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/groovy_project.png" width="50%" alt="Groovy Project"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Type project name and click Finish&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/new_project.png" width="50%" alt="Project Name"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Copy agileclasses.jar and AgileAPI.jar files to your local machine. Here is quick and easy way to find them:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cd $AGILE_HOME
+find . -iname agileclasses.jar
+find . -iname AgileAPI.jar
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Go to Project properties and add copied JARs&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/properties.png" width="50%" alt="Add JARs"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Right click on 'src' and choose new -&amp;gt; other&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/src_new_other.png" width="50%" alt="src-&gt;new-&amp;gt;other"&amp;gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Choose Groovy class&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Fill create a new Groovy class form&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180503_developing_script_event_handlers_with_eclipse/new_class.png" width="50%" alt="groovy class"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Paste Agile Groovy Event code into created class file&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;com.agile.agileDSL.ScriptObj.IBaseScriptObj&lt;/span&gt;
+
+&lt;span class="n"&gt;void&lt;/span&gt; &lt;span class="n"&gt;invokeScript&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;IBaseScriptObj&lt;/span&gt; &lt;span class="n"&gt;obj&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;script&lt;/span&gt; &lt;span class="n"&gt;body&lt;/span&gt; &lt;span class="n"&gt;starts&lt;/span&gt; &lt;span class="n"&gt;here&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ul&gt;</content><category term="Agile PLM"></category><category term="Groovy"></category><category term="Eclipse"></category></entry></feed>
