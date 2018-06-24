@@ -6,11 +6,10 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="author" content="Sergei Vovk" />
-        <meta name="description" content="" />
+    <meta name="keywords" content="Java" />
 
 
-    <title>Sergei Vovk | Blog</title>
+    <title>Java - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -162,10 +161,23 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-<ul>
-    <li><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a></li>
-    <li><a href="https://svovk.github.io/category/oracle-ebs.html">Oracle EBS</a></li>
-</ul>
+<div class="row">
+    <div class="col-lg-9">
+        <header class="page-header">
+            <h1>Articles featuring Java</h1>
+        </header>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-9">
+            <article>
+                <h4>
+                    <time datetime="2018-06-25T00:10:00+03:00"> Mon 25 June 2018</time>
+                    <a href="https://svovk.github.io/iterating-over-multilist-attribute-values.html">Iterating over MultiList attribute values</a>
+                </h4>
+            </article>
+    </div>
+</div>
 <footer>
     <hr>
     <div class="row">
@@ -204,5 +216,24 @@
         })();
     </script>
     <!-- End Google Analytics Code -->
+<script>
+    function FadeInOnScroll(ObjectList){
+        ObjectList.each(function(i) {
+            var bottom_of_object = $(this).position().top + $(this).outerHeight();
+            var bottom_of_window = $(window).scrollTop() + $(window).height();
+
+            if( bottom_of_window > bottom_of_object ){
+                $(this).fadeTo(750,1);
+            }
+        });
+    }
+
+    articles = $("article").fadeTo(0, 0.05);
+    FadeInOnScroll(articles)
+
+    $(window).scroll(function() {
+        FadeInOnScroll(articles)
+    });
+</script>
 </body>
 </html>
