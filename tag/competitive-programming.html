@@ -6,12 +6,10 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Groovy,Java" />
-        <meta name="description" content="I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values: String selected[] = dataObject.getValue(&#34;Page …" />
+    <meta name="keywords" content="Competitive Programming" />
 
 
-    <title>Iterating over MultiList attribute values - Sergei Vovk | Blog</title>
+    <title>Competitive Programming - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -134,7 +132,7 @@
                     </a>
                 </li>
                 <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
@@ -170,72 +168,23 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-<section id="content">
-    <article>
-        <div class="row">
-            <div class="col-lg-9">
-                <header class="page-header">
-                    <h1>
-                        <a href="https://svovk.github.io/iterating-over-multilist-attribute-values.html"
-                           rel="bookmark"
-                           title="Permalink to Iterating over MultiList attribute values">
-                            Iterating over MultiList attribute values
-                        </a>
-                        <small>
-<div class="post-info">
-    <div class="publish-info-block">
-        <small>
-            <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-06-25T00:10:00+03:00"> Mon 25 June 2018</time>
-            </span>
-            <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
-            </span>
-            <span class="tags">
-                <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/groovy.html">Groovy</a> /                 <a href="https://svovk.github.io/tag/java.html">Java</a>            </span>
-        </small>
+<div class="row">
+    <div class="col-lg-9">
+        <header class="page-header">
+            <h1>Articles featuring Competitive Programming</h1>
+        </header>
     </div>
-</div><!-- /.post-info -->                        </small>
-                    </h1>
-                </header>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-9">
-                <div class="entry-content">
-                    <p>I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values:</p>
-<div class="highlight"><pre><span></span><span class="n">String</span> <span class="n">selected</span><span class="o">[]</span> <span class="o">=</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">toString</span><span class="o">().</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;;&quot;</span><span class="o">);</span>
-<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">selected</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">selected</span><span class="o">[</span><span class="n">j</span><span class="o">]);</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
-</pre></div>
-
-
-<p>First of all, this code has some overhead as it concatenates selected multilist values into one string and then splits this string. Then, it relays on toString() result which behavior is not guaranteed. I would prefer following approach to do the same (in Java 7)</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="o">(</span><span class="n">IAgileList</span> <span class="n">selected</span> <span class="o">:</span> 
-        <span class="o">((</span><span class="n">IAgileList</span><span class="o">)</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">)).</span><span class="na">getSelection</span><span class="o">()){</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">selected</span><span class="o">.</span><span class="na">getValue</span><span class="o">());</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
-</pre></div>
-
-
-<p>Yes, it's a bit more complicated but I like that now one may actually <em>read</em> the code.</p>
-<p>In Groovy the same approach may be used in combination with a closure which makes our code even more expressive and shorter:</p>
-<div class="highlight"><pre><span></span><span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s2">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">getSelection</span><span class="o">().</span><span class="na">each</span> <span class="o">{</span> <span class="n">selected</span> <span class="o">-&gt;</span>
-    <span class="n">println</span><span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">value</span><span class="o">)</span>
-<span class="o">}</span>
-</pre></div>
-                </div>
-                <footer class="text-right">
-                    <p>- Sergei Vovk</p>
-                </footer>
-            </div>
-        </div>
-    </article>
-</section>
+</div>
+<div class="row">
+    <div class="col-lg-9">
+            <article>
+                <h4>
+                    <time datetime="2018-07-01T23:50:00+03:00"> Sun 01 July 2018</time>
+                    <a href="https://svovk.github.io/benchmark-reading-integer-values.html">Benchmark - reading integer values</a>
+                </h4>
+            </article>
+    </div>
+</div>
 <footer>
     <hr>
     <div class="row">
@@ -274,6 +223,24 @@
         })();
     </script>
     <!-- End Google Analytics Code -->
+<script>
+    function FadeInOnScroll(ObjectList){
+        ObjectList.each(function(i) {
+            var bottom_of_object = $(this).position().top + $(this).outerHeight();
+            var bottom_of_window = $(window).scrollTop() + $(window).height();
 
+            if( bottom_of_window > bottom_of_object ){
+                $(this).fadeTo(750,1);
+            }
+        });
+    }
+
+    articles = $("article").fadeTo(0, 0.05);
+    FadeInOnScroll(articles)
+
+    $(window).scroll(function() {
+        FadeInOnScroll(articles)
+    });
+</script>
 </body>
 </html>

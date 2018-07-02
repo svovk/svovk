@@ -7,11 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Groovy,Java" />
-        <meta name="description" content="I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values: String selected[] = dataObject.getValue(&#34;Page …" />
+        <meta name="keywords" content="Java,Competitive Programming" />
+        <meta name="description" content="I like solving algorithmic problems. One of the routines that you do working on such tasks is implementing code for reading input data. In the challenges your code has to provide right answers in a specified timeframe and to achieve this sometimes it isn&#39;t enough to tune your algorithm - it …" />
 
 
-    <title>Iterating over MultiList attribute values - Sergei Vovk | Blog</title>
+    <title>Benchmark - reading integer values - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -134,14 +134,14 @@
                     </a>
                 </li>
                 <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
                             <span class="badge pull-right categorybadge">5</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/java.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Java
@@ -176,24 +176,24 @@
             <div class="col-lg-9">
                 <header class="page-header">
                     <h1>
-                        <a href="https://svovk.github.io/iterating-over-multilist-attribute-values.html"
+                        <a href="https://svovk.github.io/benchmark-reading-integer-values.html"
                            rel="bookmark"
-                           title="Permalink to Iterating over MultiList attribute values">
-                            Iterating over MultiList attribute values
+                           title="Permalink to Benchmark - reading integer values">
+                            Benchmark - reading integer values
                         </a>
                         <small>
 <div class="post-info">
     <div class="publish-info-block">
         <small>
             <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-06-25T00:10:00+03:00"> Mon 25 June 2018</time>
+                <i class="fa fa-calendar padding-small"></i><time datetime="2018-07-01T23:50:00+03:00"> Sun 01 July 2018</time>
             </span>
             <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/java.html">Java</a>
             </span>
             <span class="tags">
                 <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/groovy.html">Groovy</a> /                 <a href="https://svovk.github.io/tag/java.html">Java</a>            </span>
+                <a href="https://svovk.github.io/tag/java.html">Java</a> /                 <a href="https://svovk.github.io/tag/competitive-programming.html">Competitive Programming</a>            </span>
         </small>
     </div>
 </div><!-- /.post-info -->                        </small>
@@ -204,30 +204,30 @@
         <div class="row">
             <div class="col-lg-9">
                 <div class="entry-content">
-                    <p>I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values:</p>
-<div class="highlight"><pre><span></span><span class="n">String</span> <span class="n">selected</span><span class="o">[]</span> <span class="o">=</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">toString</span><span class="o">().</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;;&quot;</span><span class="o">);</span>
-<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">selected</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">selected</span><span class="o">[</span><span class="n">j</span><span class="o">]);</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
+                    <p>I like solving algorithmic problems. One of the routines that you do working on such tasks is implementing code for reading input data. In the challenges your code has to provide right answers in a specified timeframe and to achieve this sometimes it isn't enough to tune your algorithm - it may be important to read input data fast. Especially it may be noticeable on problems with huge input datasets.</p>
+<p>To pick the fastest way I created a <a href="https://github.com/svovk/jmh-benchmark-text-scanning">benchmark</a> comparing different approaches for reading integers from a file (it is usual format of input data):</p>
+<ul>
+<li>(measureScanner) <code>Scanner(File source)</code> Scanner constructed based on FileReader</li>
+<li>(measureFileReaderScanner)<code>Scanner</code> constructed using <code>Scanner(Readable source)</code> constructor where <code>Readable</code> is <code>FileReader</code></li>
+<li>(measureBufferedFileReaderScanner) <code>Scanner</code> constructed using <code>Scanner(Readable source)</code> constructor where <code>Readable</code> is <code>FileReader</code> wrapped in <code>BufferedReader</code></li>
+<li>(measureMyScanner) a bit reworked version of <code>MyScanner</code> class (original one is published on <a href="http://codeforces.com/blog/entry/7018">Codeforces</a>)</li>
+</ul>
+<p>And here are results that I get on my Mid 2012 MacBook Pro:</p>
+<div class="highlight"><pre><span></span>Benchmark                                           Mode  Cnt        Score       Error  Units
+TextScanBenchmark.mesureBufferedFileReaderScanner  thrpt   25  1008316.536 ±  5711.553  ops/s
+TextScanBenchmark.mesureFileReaderScanner          thrpt   25  1016116.706 ±  8823.260  ops/s
+TextScanBenchmark.mesureMyScanner                  thrpt   25  6315469.046 ± 81171.672  ops/s
+TextScanBenchmark.mesureScanner                    thrpt   25  1031693.182 ±  7556.776  ops/s
 </pre></div>
 
 
-<p>First of all, this code has some overhead as it concatenates selected multilist values into one string and then splits this string. Then, it relays on toString() result which behavior is not guaranteed. I would prefer following approach to do the same (in Java 7)</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="o">(</span><span class="n">IAgileList</span> <span class="n">selected</span> <span class="o">:</span> 
-        <span class="o">((</span><span class="n">IAgileList</span><span class="o">)</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">)).</span><span class="na">getSelection</span><span class="o">()){</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">selected</span><span class="o">.</span><span class="na">getValue</span><span class="o">());</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
-</pre></div>
-
-
-<p>Yes, it's a bit more complicated but I like that now one may actually <em>read</em> the code.</p>
-<p>In Groovy the same approach may be used in combination with a closure which makes our code even more expressive and shorter:</p>
-<div class="highlight"><pre><span></span><span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s2">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">getSelection</span><span class="o">().</span><span class="na">each</span> <span class="o">{</span> <span class="n">selected</span> <span class="o">-&gt;</span>
-    <span class="n">println</span><span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">value</span><span class="o">)</span>
-<span class="o">}</span>
-</pre></div>
+<p>And the same numbers on a plot (red lines show errors)</p>
+<p><img alt="Integer Values Read Benchmark" src="https://svovk.github.io/images/20180701_speed_of_input_reading_java/integer_values_read_benchmark.png"></p>
+<p>What can we conclude based on this?</p>
+<ul>
+<li>first of all, it doesn't matter how you create Scanner class - passing a <code>File</code> to the constructor, <code>FileReader</code> class or <code>FileReader</code> class wrapped in <code>BufferedReader</code> (<code>Scanner</code> class itself has buffering logic and adding another layer of buffering doesn't add any value)</li>
+<li>to speed up the file reading process a custom class may be used (my <a href="https://github.com/svovk/jmh-benchmark-text-scanning/blob/master/src/main/java/com/sergeivovk/io/MyScanner.java">example</a>)</li>
+</ul>
                 </div>
                 <footer class="text-right">
                     <p>- Sergei Vovk</p>
