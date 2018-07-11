@@ -7,11 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Groovy,Java" />
-        <meta name="description" content="I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values: String selected[] = dataObject.getValue(&#34;Page …" />
+        <meta name="keywords" content="Oracle EBS,JSP,Java" />
+        <meta name="description" content="Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might need precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a …" />
 
 
-    <title>Iterating over MultiList attribute values - Sergei Vovk | Blog</title>
+    <title>Authenticating EBS users in JSP pages - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -134,7 +134,7 @@
                     </a>
                 </li>
                 <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
@@ -148,7 +148,7 @@
                             <span class="badge pull-right categorybadge">1</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/oracle-ebs.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Oracle EBS
@@ -176,24 +176,24 @@
             <div class="col-lg-9">
                 <header class="page-header">
                     <h1>
-                        <a href="https://svovk.github.io/iterating-over-multilist-attribute-values.html"
+                        <a href="https://svovk.github.io/authenticating-ebs-users-in-jsp-pages.html"
                            rel="bookmark"
-                           title="Permalink to Iterating over MultiList attribute values">
-                            Iterating over MultiList attribute values
+                           title="Permalink to Authenticating EBS users in JSP pages">
+                            Authenticating EBS users in JSP pages
                         </a>
                         <small>
 <div class="post-info">
     <div class="publish-info-block">
         <small>
             <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-06-25T00:10:00+03:00"> Mon 25 June 2018</time>
+                <i class="fa fa-calendar padding-small"></i><time datetime="2018-07-11T10:20:00+03:00"> Wed 11 July 2018</time>
             </span>
             <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/oracle-ebs.html">Oracle EBS</a>
             </span>
             <span class="tags">
                 <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/groovy.html">Groovy</a> /                 <a href="https://svovk.github.io/tag/java.html">Java</a>            </span>
+                <a href="https://svovk.github.io/tag/oracle-ebs.html">Oracle EBS</a> /                 <a href="https://svovk.github.io/tag/jsp.html">JSP</a> /                 <a href="https://svovk.github.io/tag/java.html">Java</a>            </span>
         </small>
     </div>
 </div><!-- /.post-info -->                        </small>
@@ -204,30 +204,34 @@
         <div class="row">
             <div class="col-lg-9">
                 <div class="entry-content">
-                    <p>I frequently work on enhancing functionality of Event Handlers and Process Extensions developed by 3rd party companies and relativery often notice doubtful patterns in the code. Here is one from top 10 list. Many developers use following approach for iterating over selected MultiList attribute values:</p>
-<div class="highlight"><pre><span></span><span class="n">String</span> <span class="n">selected</span><span class="o">[]</span> <span class="o">=</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">toString</span><span class="o">().</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;;&quot;</span><span class="o">);</span>
-<span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">selected</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">selected</span><span class="o">[</span><span class="n">j</span><span class="o">]);</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
+                    <p>Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might <strong>need</strong> precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a good fallback.</p>
+<p>This fallback comes at a price though - in servlet pages, you have to do a lot of things manually. In this post, I will share a code snippet that might be used for authenticating OEBS users in your custom JSP page. In most of the cases, it is the first thing that should be done in a custom page.</p>
+<div class="highlight"><pre><span></span><span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span>
+ <span class="n">language</span> <span class="o">=</span> <span class="s2">&quot;java&quot;</span>
+ <span class="kn">import</span> <span class="o">=</span> <span class="s2">&quot;oracle.apps.fnd.common.WebAppsContext&quot;</span>
+ <span class="kn">import</span> <span class="o">=</span> <span class="s2">&quot;oracle.apps.fnd.common.WebRequestUtil&quot;</span>
+<span class="o">%&gt;</span>
+<span class="o">&lt;%</span>
+    <span class="n">WebAppsContext</span> <span class="n">ctx</span> <span class="o">=</span> <span class="n">null</span><span class="p">;</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="n">String</span> <span class="n">userName</span> <span class="o">=</span> <span class="n">null</span><span class="p">;</span>
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">WebRequestUtil</span><span class="o">.</span><span class="n">validateContext</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ctx</span> <span class="o">==</span> <span class="n">null</span><span class="p">){</span>
+            <span class="n">throw</span> <span class="n">new</span> <span class="n">RuntimeException</span><span class="p">(</span><span class="s2">&quot;Unable to get context&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">userName</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">getUserName</span><span class="p">();</span>
+        <span class="o">%&gt;&lt;</span><span class="n">h2</span><span class="o">&gt;</span><span class="n">Hello</span><span class="p">,</span> <span class="o">&lt;%=</span><span class="n">userName</span><span class="o">%&gt;&lt;/</span><span class="n">h2</span><span class="o">&gt;&lt;%</span>
+    <span class="p">}</span><span class="k">finally</span><span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ctx</span> <span class="o">!=</span> <span class="n">null</span><span class="p">){</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">freeWebAppsContext</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="o">%&gt;</span>
 </pre></div>
 
 
-<p>First of all, this code has some overhead as it concatenates selected multilist values into one string and then splits this string. Then, it relays on toString() result which behavior is not guaranteed. I would prefer following approach to do the same (in Java 7)</p>
-<div class="highlight"><pre><span></span><span class="k">for</span> <span class="o">(</span><span class="n">IAgileList</span> <span class="n">selected</span> <span class="o">:</span> 
-        <span class="o">((</span><span class="n">IAgileList</span><span class="o">)</span> <span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s">&quot;Page Three.MultiList01&quot;</span><span class="o">)).</span><span class="na">getSelection</span><span class="o">()){</span>
-    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="n">String</span><span class="o">)</span> <span class="n">selected</span><span class="o">.</span><span class="na">getValue</span><span class="o">());</span>
-    <span class="c1">// ...</span>
-<span class="o">}</span>
-</pre></div>
-
-
-<p>Yes, it's a bit more complicated but I like that now one may actually <em>read</em> the code.</p>
-<p>In Groovy the same approach may be used in combination with a closure which makes our code even more expressive and shorter:</p>
-<div class="highlight"><pre><span></span><span class="n">dataObject</span><span class="o">.</span><span class="na">getValue</span><span class="o">(</span><span class="s2">&quot;Page Three.MultiList01&quot;</span><span class="o">).</span><span class="na">getSelection</span><span class="o">().</span><span class="na">each</span> <span class="o">{</span> <span class="n">selected</span> <span class="o">-&gt;</span>
-    <span class="n">println</span><span class="o">(</span><span class="n">selected</span><span class="o">.</span><span class="na">value</span><span class="o">)</span>
-<span class="o">}</span>
-</pre></div>
+<p>This code is very straightforward, it gets <code>WebAppsContext</code> object which is then used to request current username.</p>
+<p><code>WebAppsContext</code> is a quite basic object that tracks key Oracle EBS context information like responsibility, organization and etc. Behind the scenes, all these information is obtained based on <code>JSESSIONID</code> cookie value that is set for all pages under <code>http://your-url/OA_HTML/</code> by the login screen.</p>
                 </div>
                 <footer class="text-right">
                     <p>- Sergei Vovk</p>
