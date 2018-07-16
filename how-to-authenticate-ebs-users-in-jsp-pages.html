@@ -11,7 +11,7 @@
         <meta name="description" content="Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might need precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a …" />
 
 
-    <title>Authenticating EBS users in JSP pages - Sergei Vovk | Blog</title>
+    <title>How to authenticate EBS users in JSP pages - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -176,10 +176,10 @@
             <div class="col-lg-9">
                 <header class="page-header">
                     <h1>
-                        <a href="https://svovk.github.io/authenticating-ebs-users-in-jsp-pages.html"
+                        <a href="https://svovk.github.io/how-to-authenticate-ebs-users-in-jsp-pages.html"
                            rel="bookmark"
-                           title="Permalink to Authenticating EBS users in JSP pages">
-                            Authenticating EBS users in JSP pages
+                           title="Permalink to How to authenticate EBS users in JSP pages">
+                            How to authenticate EBS users in JSP pages
                         </a>
                         <small>
 <div class="post-info">
@@ -205,7 +205,7 @@
             <div class="col-lg-9">
                 <div class="entry-content">
                     <p>Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might <strong>need</strong> precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a good fallback.</p>
-<p>This fallback comes at a price though - in servlet pages, you have to do a lot of things manually. In this post, I will share a code snippet that might be used for authenticating OEBS users in your custom JSP page. In most of the cases, it is the first thing that should be done in a custom page.</p>
+<p>This fallback comes at a price though - in servlet pages, you have to do a lot of things manually. This post is to share a code snippet that might be used for authenticating Oracle EBS users in a custom JSP page. Often, it is the first thing that is done.</p>
 <div class="highlight"><pre><span></span><span class="o">&lt;%</span><span class="err">@</span> <span class="n">page</span>
  <span class="n">language</span> <span class="o">=</span> <span class="s2">&quot;java&quot;</span>
  <span class="kn">import</span> <span class="o">=</span> <span class="s2">&quot;oracle.apps.fnd.common.WebAppsContext&quot;</span>
@@ -231,7 +231,7 @@
 
 
 <p>This code is very straightforward, it gets <code>WebAppsContext</code> object which is then used to request current username.</p>
-<p><code>WebAppsContext</code> is a quite basic object that tracks key Oracle EBS context information like responsibility, organization and etc. Behind the scenes, all these information is obtained based on <code>JSESSIONID</code> cookie value that is set for all pages under <code>http://your-url/OA_HTML/</code> by the login screen.</p>
+<p><code>WebAppsContext</code> is a quite basic object that tracks key Oracle EBS context information like responsibility, organization and etc. Behind the scenes, all these information is obtained based on <code>JSESSIONID</code> cookie that is set for all pages under <code>http://your-url/OA_HTML/</code> by the login screen.</p>
                 </div>
                 <footer class="text-right">
                     <p>- Sergei Vovk</p>
