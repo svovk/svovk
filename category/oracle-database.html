@@ -6,12 +6,11 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Groovy,Weblogic,JDBC,JNDI" />
-        <meta name="description" content="In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn&#39;t recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending …" />
+    <meta name="author" content="Sergei Vovk" />
+    <meta name="keywords" content="Oracle Database" />
 
 
-    <title>Weblogic Data Sources in Agile PLM Groovy Handlers - Sergei Vovk | Blog</title>
+    <title>Oracle Database - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -133,8 +132,8 @@
                         Categories
                     </a>
                 </li>
-                <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse in">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
@@ -148,7 +147,7 @@
                             <span class="badge pull-right categorybadge">1</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/oracle-database.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Oracle Database
@@ -177,113 +176,23 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-<section id="content">
-    <article>
-        <div class="row">
-            <div class="col-lg-9">
-                <header class="page-header">
-                    <h1>
-                        <a href="https://svovk.github.io/weblogic-data-sources-in-agile-plm-groovy-handlers.html"
-                           rel="bookmark"
-                           title="Permalink to Weblogic Data Sources in Agile PLM Groovy Handlers">
-                            Weblogic Data Sources in Agile PLM Groovy Handlers
-                        </a>
-                        <small>
-<div class="post-info">
-    <div class="publish-info-block">
-        <small>
-            <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-05-09T10:20:00+03:00"> Wed 09 May 2018</time>
-            </span>
-            <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
-            </span>
-            <span class="tags">
-                <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/groovy.html">Groovy</a> /                 <a href="https://svovk.github.io/tag/weblogic.html">Weblogic</a> /                 <a href="https://svovk.github.io/tag/jdbc.html">JDBC</a> /                 <a href="https://svovk.github.io/tag/jndi.html">JNDI</a>            </span>
-        </small>
+<div class="row">
+    <div class="col-lg-9">
+        <header class="page-header">
+            <h1>Articles in Oracle Database</h1>
+        </header>
     </div>
-</div><!-- /.post-info -->                        </small>
-                    </h1>
-                </header>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-9">
-                <div class="entry-content">
-                    <p>In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn't recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending on the particular integration case it might not be the best option to retrieve the data directly from external DB (but I won't discuss different approaches here).</p>
-<h2>Configure JDBC Data Source</h2>
-<ol>
-<li>
-<p>Log in Weblogic Administration Console</p>
-<p><img alt="WebLogic Admin Console" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_0.png"></p>
-</li>
-<li>
-<p>To start configuration change press 'Lock &amp; Edit'</p>
-<p><img alt="Lock configuration for edit" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_1a.png"></p>
-</li>
-<li>
-<p>Navigate Services -&gt; Data Sources in your domain (Domain Structure pane)</p>
-</li>
-<li>
-<p>Click New button and choose Generic Data Source</p>
-<p><img alt="New Data Source" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_2.png"></p>
-</li>
-<li>
-<p>Specify Name, JNDI Name, Database Type and click Next </p>
-<p><img alt="New Data Source - Names" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_3.png"></p>
-</li>
-<li>
-<p>Choose DB driver to be used and click Next</p>
-<p><img alt="New Data Source - Driver" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_4.png"></p>
-</li>
-<li>
-<p>Leave transaction options default</p>
-<p><img alt="New Data Source - Transaction Options" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_5.png"></p>
-</li>
-<li>
-<p>Populate DB connectivity data - database name, server name, port, account and press Next</p>
-<p><img alt="New Data Source - Connection" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_6.png"></p>
-</li>
-<li>
-<p>Test configuration and click Next</p>
-<p><img alt="New Data Source - Test" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_7.png"></p>
-</li>
-<li>
-<p>On the next screen choose servers to deploy created Data Source and press Finish</p>
-<p><img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_8.png"></p>
-</li>
-<li>
-<p>To make the changes effective press 'Activate Changes' button</p>
-<p><img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_9.png"></p>
-</li>
-</ol>
-<h2>Use created Data Source in Groovy Handler</h2>
-<p>Usage is actually pretty straightforward, you may find an example below</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">com.agile.agileDSL.ScriptObj.IBaseScriptObj</span>
-<span class="kn">import</span> <span class="nn">groovy.sql.Sql</span>
-<span class="kn">import</span> <span class="nn">javax.naming.InitialContext</span>
-
-<span class="kt">void</span> <span class="nf">invokeScript</span><span class="o">(</span><span class="n">IBaseScriptObj</span> <span class="n">obj</span><span class="o">)</span> <span class="o">{</span>
-
-    <span class="n">Sql</span> <span class="n">sql</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Sql</span><span class="o">(</span><span class="k">new</span> <span class="n">InitialContext</span><span class="o">().</span><span class="na">lookup</span><span class="o">(</span><span class="s2">&quot;My JDBC Data Source&quot;</span><span class="o">))</span>
-
-    <span class="n">sql</span><span class="o">.</span><span class="na">eachRow</span><span class="o">(</span><span class="s2">&quot;select 1  test from dual&quot;</span><span class="o">){</span> <span class="n">row</span> <span class="o">-&gt;</span>
-        <span class="n">obj</span><span class="o">.</span><span class="na">logDebug</span><span class="o">(</span><span class="s2">&quot;selected number is ${row.test}&quot;</span><span class="o">)</span>
-    <span class="o">}</span>
-<span class="o">}</span>
-</pre></div>
-
-
-<p>Note that we construct <code>Sql</code> using the DataSource. Each operation will use a Connection from the DataSource pool and close it when the operation is completed putting it back into the pool. This makes explit <code>sql.close()</code> call not required.</p>
-                </div>
-                <footer class="text-right">
-                    <p>- Sergei Vovk</p>
-                </footer>
-            </div>
-        </div>
-    </article>
-</section>
+</div>
+<div class="row">
+    <div class="col-lg-9">
+            <article>
+                <h4>
+                    <time datetime="2018-07-17T10:20:00+03:00"> Tue 17 July 2018</time>
+                    <a href="https://svovk.github.io/walkthrough-creating-an-oracle-database-docker-image.html">Walkthrough - Creating an Oracle Database Docker Image</a>
+                </h4>
+            </article>
+    </div>
+</div>
 <footer>
     <hr>
     <div class="row">
@@ -322,6 +231,24 @@
         })();
     </script>
     <!-- End Google Analytics Code -->
+<script>
+    function FadeInOnScroll(ObjectList){
+        ObjectList.each(function(i) {
+            var bottom_of_object = $(this).position().top + $(this).outerHeight();
+            var bottom_of_window = $(window).scrollTop() + $(window).height();
 
+            if( bottom_of_window > bottom_of_object ){
+                $(this).fadeTo(750,1);
+            }
+        });
+    }
+
+    articles = $("article").fadeTo(0, 0.05);
+    FadeInOnScroll(articles)
+
+    $(window).scroll(function() {
+        FadeInOnScroll(articles)
+    });
+</script>
 </body>
 </html>

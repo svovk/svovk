@@ -1,5 +1,183 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-07-11T10:20:00+03:00</updated><entry><title>How to authenticate EBS users in JSP pages</title><link href="https://svovk.github.io/how-to-authenticate-ebs-users-in-jsp-pages.html" rel="alternate"></link><published>2018-07-11T10:20:00+03:00</published><updated>2018-07-11T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-07-11:/how-to-authenticate-ebs-users-in-jsp-pages.html</id><summary type="html">&lt;p&gt;Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might &lt;strong&gt;need&lt;/strong&gt; precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might &lt;strong&gt;need&lt;/strong&gt; precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a good fallback.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-07-17T10:20:00+03:00</updated><entry><title>Walkthrough - Creating an Oracle Database Docker Image</title><link href="https://svovk.github.io/walkthrough-creating-an-oracle-database-docker-image.html" rel="alternate"></link><published>2018-07-17T10:20:00+03:00</published><updated>2018-07-17T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-07-17:/walkthrough-creating-an-oracle-database-docker-image.html</id><summary type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't want to leave developers working with their software aside of this revolution and supports running many of their product within containers. In this post, I will go through steps of setting up a container having Oracle Database on board. We will need just a couple of things for it:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Docker (surprised?)&lt;/li&gt;
+&lt;li&gt;Oracle account&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Prepare the stage&lt;/h2&gt;
+&lt;p&gt;In this guide we will build an Oracle Database Docker image ourselves. To do it, in the first place, we have to prepare a couple ingredients:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;Clone Oracle &lt;code&gt;docker-images&lt;/code&gt; Git repository to your machine or download the repo as an &lt;a href="https://github.com/oracle/docker-images/archive/master.zip"&gt;archive&lt;/a&gt; and unzip it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;git clone https://github.com/oracle/docker-images
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;or&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;curl -L https://github.com/oracle/docker-images/archive/master.zip &amp;gt; docker-images.zip
+unzip docker-images.zip
+mv docker-images-master docker-images
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Go to &lt;a href="http://www.oracle.com/technetwork/database/enterprise-edition/downloads/index.html"&gt;Oracle Database Software Downloads&lt;/a&gt; page and download x86-64 version of Oracle Database 12c Release 2 binaries. &lt;/p&gt;
+&lt;p&gt;You will have to accept License Agreement and log in with your Oracle account.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="image" src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/accept_license.png"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="image" src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/download_oracle_database.png"&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Put downloaded database distribution archive into &lt;code&gt;docker-images/OracleDatabase/SingleInstance/dockerfiles/12.2.0.1&lt;/code&gt; directory&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ ls -l docker-images/OracleDatabase/SingleInstance/dockerfiles/12.2.0.1
+total 6745656
+-rw-r--r--  1 svovk  staff          62 Jul 17 09:35 Checksum.ee
+-rw-r--r--  1 svovk  staff          62 Jul 17 09:35 Checksum.se2
+-rw-r--r--  1 svovk  staff        2639 Jul 17 09:35 Dockerfile.ee
+-rw-r--r--  1 svovk  staff        2645 Jul 17 09:35 Dockerfile.se2
+-rwxr-xr-x  1 svovk  staff        1148 Jul 17 09:35 checkDBStatus.sh
+-rwxr-xr-x  1 svovk  staff         905 Jul 17 09:35 checkSpace.sh
+-rwxr-xr-x  1 svovk  staff        2953 Jul 17 09:35 createDB.sh
+-rw-r--r--  1 svovk  staff        6878 Jul 17 09:35 db_inst.rsp
+-rw-r--r--  1 svovk  staff        9203 Jul 17 09:35 dbca.rsp.tmpl
+-rwxr-xr-x  1 svovk  staff        2250 Jul 17 09:35 installDBBinaries.sh
+-rw-r--r--@ 1 svovk  staff  3453696911 Jul 17 11:24 linuxx64_12201_database.zip
+-rwxr-xr-x  1 svovk  staff        6140 Jul 17 09:35 runOracle.sh
+-rwxr-xr-x  1 svovk  staff        1015 Jul 17 09:35 runUserScripts.sh
+-rwxr-xr-x  1 svovk  staff         758 Jul 17 09:35 setPassword.sh
+-rwxr-xr-x  1 svovk  staff         876 Jul 17 09:35 setupLinuxEnv.sh
+-rwxr-xr-x  1 svovk  staff         678 Jul 17 09:35 startDB.sh
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Build the image&lt;/h2&gt;
+&lt;p&gt;Ok, at this point everything is ready to build the image itself. It requires only 2 commands:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cd docker-images/OracleDatabase/SingleInstance/dockerfiles/
+./buildDockerImage.sh -v 12.2.0.1 -e
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We pass following parameters to &lt;code&gt;buildDockerImage&lt;/code&gt; script:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;-v&lt;/code&gt; specifies database version for which the image should be built&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-e&lt;/code&gt; says that we are going to build enterprise edition database&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Expect that it will take some time to build the image (on my Mid-2012 MacBook Pro it took about 30 minutes). At the end of the build process you'll see following message:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Oracle Database Docker Image for &amp;#39;ee&amp;#39; version 12.2.0.1 is ready to be extended: 
+
+--&amp;gt; oracle/database:12.2.0.1-ee
+
+Build completed in 2005 seconds.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Now list of available docker images should contain &lt;code&gt;oracle/database:12.2.0.1-ee&lt;/code&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ docker images
+REPOSITORY               TAG                 IMAGE ID            CREATED             SIZE
+oracle/database          12.2.0.1-ee         163d644d8a0c        12 hours ago        13.2GB
+oraclelinux              7-slim              b1af4ba0cf19        11 days ago         117MB
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Start the database!&lt;/h2&gt;
+&lt;p&gt;All is ready to run a container based on the image we just created. But let me say few words about parameters that we will pass.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;With &lt;code&gt;-e&lt;/code&gt; we specify environment variables. Using them we define SID, PDB names and also password that will be set for SYS, SYSTEM, and PDBADMIN database users.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;-p&lt;/code&gt; parameter publishes container ports to the host machine. &lt;/li&gt;
+&lt;li&gt;Finally, &lt;code&gt;-v&lt;/code&gt; specifies bind mount for the directory that stores Oracle data files. &lt;strong&gt;You should replace &lt;code&gt;/path/to/some/directory&lt;/code&gt; with some valid path on your computer.&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker run --name oracle-db12.2-ee \
+-p 1521:1521 -p 5500:5500 \
+-e ORACLE_SID=ORCL1 \
+-e ORACLE_PDB=ORCLPDB1 \
+-e ORACLE_PWD=welcome \
+-v /path/to/some/directory:/opt/oracle/oradata \
+oracle/database:12.2.0.1-ee
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;After executing the command, give it some time and you'll see following message:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; Disconnected from Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production
+The Oracle base remains unchanged with value /opt/oracle
+#########################
+DATABASE IS READY TO USE!
+#########################
+The following output is now a tail of the alert.log:
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Not surprisingly, it indicates that your Oracle is up and running. Congratulations!&lt;/p&gt;
+&lt;h2&gt;Create a new user&lt;/h2&gt;
+&lt;p&gt;The first thing that I usually do once I have a freshly built database - creating a user. Let's connect via SQL*Plus and set one up!&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;While our container is running, open additional terminal session and execute &lt;code&gt;docker stop -t 60 oracle-db12.2-ee&lt;/code&gt;. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;$ docker exec -it oracle-db12.2-ee /bin/bash
+[oracle@1e0aed256c62 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 12.2.0.1.0 Production on Wed Jul 18 07:36:15 2018
+
+Copyright (c) 1982, 2016, Oracle.  All rights reserved.
+
+Connected to:
+Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production
+
+SQL&amp;gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;I also have a habit to check in which instance we are on before doing anything, it might be completely not needed here, but:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+ORCL1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Let's create a user named &lt;code&gt;test&lt;/code&gt; which is identified by &lt;code&gt;testpwd&lt;/code&gt; password. Of course, you may change the name and password to whatever you want. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; ALTER SESSION SET CONTAINER = orclpdb1;
+
+Session altered.
+
+SQL&amp;gt; grant connect, resource to test identified by testpwd container=current;
+
+Grant succeeded.
+
+SQL&amp;gt; GRANT CREATE SESSION TO test container=current;
+
+Grant succeeded.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;That's it!&lt;/h3&gt;
+&lt;p&gt;We are all set now. We have a database running. We have a user in it. For reference, here is configuration that I used to connect SQLDeveloper via &lt;code&gt;test&lt;/code&gt; user to the database&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/sqldeveloper_new_connection.png" width="100%" alt="SQL Developer New Connection"&gt;&lt;/p&gt;
+&lt;h3&gt;How to stop/restart created container&lt;/h3&gt;
+&lt;p&gt;Sooner or later you will need to stop the container. An important thing to keep in mind - it is recommended to give Oracle additional time for shutdown activities. By default, when you stop a container Docker waits 10 seconds and then kills it. This may be too tight for Oracle Database. Let's make Docker wait up to one minute.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker stop -t 60 oracle-db12.2-ee
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;If you didn't remove stopped container, it remains available and you may start it again with following&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker start oracle-db12.2-ee
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;This command will start the container in background mode. You might also want to check its logs:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;docker logs oracle-db12.2-ee
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;br&gt;&lt;br&gt;That's all that have for this post, my best wishes in using Docker!&lt;/p&gt;</content><category term="Oracle Database"></category><category term="Docker"></category></entry><entry><title>How to authenticate EBS users in JSP pages</title><link href="https://svovk.github.io/how-to-authenticate-ebs-users-in-jsp-pages.html" rel="alternate"></link><published>2018-07-11T10:20:00+03:00</published><updated>2018-07-11T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-07-11:/how-to-authenticate-ebs-users-in-jsp-pages.html</id><summary type="html">&lt;p&gt;Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might &lt;strong&gt;need&lt;/strong&gt; precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Almost always Oracle Applications Framework is the preferable way for creating new pages for your Oracle EBS ecosystem. But in rare cases, OAF fails to fit the needs. For example, you might &lt;strong&gt;need&lt;/strong&gt; precise control over HTML code that is rendered. In such cases, Java Servlet Pages might be a good fallback.&lt;/p&gt;
 &lt;p&gt;This fallback comes at a price though - in servlet pages, you have to do a lot of things manually. This post is to share a code snippet that might be used for authenticating Oracle EBS users in a custom JSP page. Often, it is the first thing that is done.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;%&lt;/span&gt;&lt;span class="err"&gt;@&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;
  &lt;span class="n"&gt;language&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;java&amp;quot;&lt;/span&gt;

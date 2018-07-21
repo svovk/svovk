@@ -7,11 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Groovy,Weblogic,JDBC,JNDI" />
-        <meta name="description" content="In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn&#39;t recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending …" />
+        <meta name="keywords" content="Oracle Database,Docker" />
+        <meta name="description" content="Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren&#39;t shipped for OS X which I use frequently. Fortunately, Oracle doesn&#39;t …" />
 
 
-    <title>Weblogic Data Sources in Agile PLM Groovy Handlers - Sergei Vovk | Blog</title>
+    <title>Walkthrough - Creating an Oracle Database Docker Image - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -134,7 +134,7 @@
                     </a>
                 </li>
                 <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
@@ -148,7 +148,7 @@
                             <span class="badge pull-right categorybadge">1</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/oracle-database.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Oracle Database
@@ -183,24 +183,24 @@
             <div class="col-lg-9">
                 <header class="page-header">
                     <h1>
-                        <a href="https://svovk.github.io/weblogic-data-sources-in-agile-plm-groovy-handlers.html"
+                        <a href="https://svovk.github.io/walkthrough-creating-an-oracle-database-docker-image.html"
                            rel="bookmark"
-                           title="Permalink to Weblogic Data Sources in Agile PLM Groovy Handlers">
-                            Weblogic Data Sources in Agile PLM Groovy Handlers
+                           title="Permalink to Walkthrough - Creating an Oracle Database Docker Image">
+                            Walkthrough - Creating an Oracle Database Docker Image
                         </a>
                         <small>
 <div class="post-info">
     <div class="publish-info-block">
         <small>
             <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-05-09T10:20:00+03:00"> Wed 09 May 2018</time>
+                <i class="fa fa-calendar padding-small"></i><time datetime="2018-07-17T10:20:00+03:00"> Tue 17 July 2018</time>
             </span>
             <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/oracle-database.html">Oracle Database</a>
             </span>
             <span class="tags">
                 <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/groovy.html">Groovy</a> /                 <a href="https://svovk.github.io/tag/weblogic.html">Weblogic</a> /                 <a href="https://svovk.github.io/tag/jdbc.html">JDBC</a> /                 <a href="https://svovk.github.io/tag/jndi.html">JNDI</a>            </span>
+                <a href="https://svovk.github.io/tag/oracle-database.html">Oracle Database</a> /                 <a href="https://svovk.github.io/tag/docker.html">Docker</a>            </span>
         </small>
     </div>
 </div><!-- /.post-info -->                        </small>
@@ -211,71 +211,185 @@
         <div class="row">
             <div class="col-lg-9">
                 <div class="entry-content">
-                    <p>In this note, I will demonstrate how to configure JDBC Data Source in Weblogic and then use it in Agile PLM Groovy Handler. Oracle doesn't recommend query or modify Agile DB schema directly, although, code interacting with some other DB or schema is a valid approach. Please note that depending on the particular integration case it might not be the best option to retrieve the data directly from external DB (but I won't discuss different approaches here).</p>
-<h2>Configure JDBC Data Source</h2>
+                    <p>Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't want to leave developers working with their software aside of this revolution and supports running many of their product within containers. In this post, I will go through steps of setting up a container having Oracle Database on board. We will need just a couple of things for it:</p>
+<ul>
+<li>Docker (surprised?)</li>
+<li>Oracle account</li>
+</ul>
+<h2>Prepare the stage</h2>
+<p>In this guide we will build an Oracle Database Docker image ourselves. To do it, in the first place, we have to prepare a couple ingredients:</p>
 <ol>
 <li>
-<p>Log in Weblogic Administration Console</p>
-<p><img alt="WebLogic Admin Console" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_0.png"></p>
-</li>
-<li>
-<p>To start configuration change press 'Lock &amp; Edit'</p>
-<p><img alt="Lock configuration for edit" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_1a.png"></p>
-</li>
-<li>
-<p>Navigate Services -&gt; Data Sources in your domain (Domain Structure pane)</p>
-</li>
-<li>
-<p>Click New button and choose Generic Data Source</p>
-<p><img alt="New Data Source" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_2.png"></p>
-</li>
-<li>
-<p>Specify Name, JNDI Name, Database Type and click Next </p>
-<p><img alt="New Data Source - Names" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_3.png"></p>
-</li>
-<li>
-<p>Choose DB driver to be used and click Next</p>
-<p><img alt="New Data Source - Driver" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_4.png"></p>
-</li>
-<li>
-<p>Leave transaction options default</p>
-<p><img alt="New Data Source - Transaction Options" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_5.png"></p>
-</li>
-<li>
-<p>Populate DB connectivity data - database name, server name, port, account and press Next</p>
-<p><img alt="New Data Source - Connection" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_6.png"></p>
-</li>
-<li>
-<p>Test configuration and click Next</p>
-<p><img alt="New Data Source - Test" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_7.png"></p>
-</li>
-<li>
-<p>On the next screen choose servers to deploy created Data Source and press Finish</p>
-<p><img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_8.png"></p>
-</li>
-<li>
-<p>To make the changes effective press 'Activate Changes' button</p>
-<p><img alt="New Data Source - Deploy" src="https://svovk.github.io/images/20180509_weblogic_datasource_in_groovy_handlers/Screenshot_9.png"></p>
-</li>
-</ol>
-<h2>Use created Data Source in Groovy Handler</h2>
-<p>Usage is actually pretty straightforward, you may find an example below</p>
-<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">com.agile.agileDSL.ScriptObj.IBaseScriptObj</span>
-<span class="kn">import</span> <span class="nn">groovy.sql.Sql</span>
-<span class="kn">import</span> <span class="nn">javax.naming.InitialContext</span>
-
-<span class="kt">void</span> <span class="nf">invokeScript</span><span class="o">(</span><span class="n">IBaseScriptObj</span> <span class="n">obj</span><span class="o">)</span> <span class="o">{</span>
-
-    <span class="n">Sql</span> <span class="n">sql</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Sql</span><span class="o">(</span><span class="k">new</span> <span class="n">InitialContext</span><span class="o">().</span><span class="na">lookup</span><span class="o">(</span><span class="s2">&quot;My JDBC Data Source&quot;</span><span class="o">))</span>
-
-    <span class="n">sql</span><span class="o">.</span><span class="na">eachRow</span><span class="o">(</span><span class="s2">&quot;select 1  test from dual&quot;</span><span class="o">){</span> <span class="n">row</span> <span class="o">-&gt;</span>
-        <span class="n">obj</span><span class="o">.</span><span class="na">logDebug</span><span class="o">(</span><span class="s2">&quot;selected number is ${row.test}&quot;</span><span class="o">)</span>
-    <span class="o">}</span>
-<span class="o">}</span>
+<p>Clone Oracle <code>docker-images</code> Git repository to your machine or download the repo as an <a href="https://github.com/oracle/docker-images/archive/master.zip">archive</a> and unzip it:</p>
+<div class="highlight"><pre><span></span>git clone https://github.com/oracle/docker-images
 </pre></div>
 
 
-<p>Note that we construct <code>Sql</code> using the DataSource. Each operation will use a Connection from the DataSource pool and close it when the operation is completed putting it back into the pool. This makes explit <code>sql.close()</code> call not required.</p>
+<p>or</p>
+<div class="highlight"><pre><span></span>curl -L https://github.com/oracle/docker-images/archive/master.zip &gt; docker-images.zip
+unzip docker-images.zip
+mv docker-images-master docker-images
+</pre></div>
+
+
+</li>
+<li>
+<p>Go to <a href="http://www.oracle.com/technetwork/database/enterprise-edition/downloads/index.html">Oracle Database Software Downloads</a> page and download x86-64 version of Oracle Database 12c Release 2 binaries. </p>
+<p>You will have to accept License Agreement and log in with your Oracle account.</p>
+<p><img alt="image" src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/accept_license.png"></p>
+<p><img alt="image" src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/download_oracle_database.png"></p>
+</li>
+<li>
+<p>Put downloaded database distribution archive into <code>docker-images/OracleDatabase/SingleInstance/dockerfiles/12.2.0.1</code> directory</p>
+<div class="highlight"><pre><span></span>$ ls -l docker-images/OracleDatabase/SingleInstance/dockerfiles/12.2.0.1
+total 6745656
+-rw-r--r--  1 svovk  staff          62 Jul 17 09:35 Checksum.ee
+-rw-r--r--  1 svovk  staff          62 Jul 17 09:35 Checksum.se2
+-rw-r--r--  1 svovk  staff        2639 Jul 17 09:35 Dockerfile.ee
+-rw-r--r--  1 svovk  staff        2645 Jul 17 09:35 Dockerfile.se2
+-rwxr-xr-x  1 svovk  staff        1148 Jul 17 09:35 checkDBStatus.sh
+-rwxr-xr-x  1 svovk  staff         905 Jul 17 09:35 checkSpace.sh
+-rwxr-xr-x  1 svovk  staff        2953 Jul 17 09:35 createDB.sh
+-rw-r--r--  1 svovk  staff        6878 Jul 17 09:35 db_inst.rsp
+-rw-r--r--  1 svovk  staff        9203 Jul 17 09:35 dbca.rsp.tmpl
+-rwxr-xr-x  1 svovk  staff        2250 Jul 17 09:35 installDBBinaries.sh
+-rw-r--r--@ 1 svovk  staff  3453696911 Jul 17 11:24 linuxx64_12201_database.zip
+-rwxr-xr-x  1 svovk  staff        6140 Jul 17 09:35 runOracle.sh
+-rwxr-xr-x  1 svovk  staff        1015 Jul 17 09:35 runUserScripts.sh
+-rwxr-xr-x  1 svovk  staff         758 Jul 17 09:35 setPassword.sh
+-rwxr-xr-x  1 svovk  staff         876 Jul 17 09:35 setupLinuxEnv.sh
+-rwxr-xr-x  1 svovk  staff         678 Jul 17 09:35 startDB.sh
+</pre></div>
+
+
+</li>
+</ol>
+<h2>Build the image</h2>
+<p>Ok, at this point everything is ready to build the image itself. It requires only 2 commands:</p>
+<div class="highlight"><pre><span></span>cd docker-images/OracleDatabase/SingleInstance/dockerfiles/
+./buildDockerImage.sh -v 12.2.0.1 -e
+</pre></div>
+
+
+<p>We pass following parameters to <code>buildDockerImage</code> script:</p>
+<ul>
+<li><code>-v</code> specifies database version for which the image should be built</li>
+<li><code>-e</code> says that we are going to build enterprise edition database</li>
+</ul>
+<p>Expect that it will take some time to build the image (on my Mid-2012 MacBook Pro it took about 30 minutes). At the end of the build process you'll see following message:</p>
+<div class="highlight"><pre><span></span>Oracle Database Docker Image for &#39;ee&#39; version 12.2.0.1 is ready to be extended: 
+
+--&gt; oracle/database:12.2.0.1-ee
+
+Build completed in 2005 seconds.
+</pre></div>
+
+
+<p>Now list of available docker images should contain <code>oracle/database:12.2.0.1-ee</code></p>
+<div class="highlight"><pre><span></span>$ docker images
+REPOSITORY               TAG                 IMAGE ID            CREATED             SIZE
+oracle/database          12.2.0.1-ee         163d644d8a0c        12 hours ago        13.2GB
+oraclelinux              7-slim              b1af4ba0cf19        11 days ago         117MB
+</pre></div>
+
+
+<h2>Start the database!</h2>
+<p>All is ready to run a container based on the image we just created. But let me say few words about parameters that we will pass.</p>
+<ul>
+<li>With <code>-e</code> we specify environment variables. Using them we define SID, PDB names and also password that will be set for SYS, SYSTEM, and PDBADMIN database users.</li>
+<li><code>-p</code> parameter publishes container ports to the host machine. </li>
+<li>Finally, <code>-v</code> specifies bind mount for the directory that stores Oracle data files. <strong>You should replace <code>/path/to/some/directory</code> with some valid path on your computer.</strong></li>
+</ul>
+<div class="highlight"><pre><span></span>docker run --name oracle-db12.2-ee \
+-p 1521:1521 -p 5500:5500 \
+-e ORACLE_SID=ORCL1 \
+-e ORACLE_PDB=ORCLPDB1 \
+-e ORACLE_PWD=welcome \
+-v /path/to/some/directory:/opt/oracle/oradata \
+oracle/database:12.2.0.1-ee
+</pre></div>
+
+
+<p>After executing the command, give it some time and you'll see following message:</p>
+<div class="highlight"><pre><span></span>SQL&gt; Disconnected from Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production
+The Oracle base remains unchanged with value /opt/oracle
+#########################
+DATABASE IS READY TO USE!
+#########################
+The following output is now a tail of the alert.log:
+</pre></div>
+
+
+<p>Not surprisingly, it indicates that your Oracle is up and running. Congratulations!</p>
+<h2>Create a new user</h2>
+<p>The first thing that I usually do once I have a freshly built database - creating a user. Let's connect via SQL*Plus and set one up!</p>
+<ol>
+<li>
+<p>While our container is running, open additional terminal session and execute <code>docker stop -t 60 oracle-db12.2-ee</code>. </p>
+<div class="highlight"><pre><span></span>$ docker exec -it oracle-db12.2-ee /bin/bash
+[oracle@1e0aed256c62 ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 12.2.0.1.0 Production on Wed Jul 18 07:36:15 2018
+
+Copyright (c) 1982, 2016, Oracle.  All rights reserved.
+
+Connected to:
+Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production
+
+SQL&gt;
+</pre></div>
+
+
+</li>
+<li>
+<p>I also have a habit to check in which instance we are on before doing anything, it might be completely not needed here, but:</p>
+<div class="highlight"><pre><span></span>SQL&gt; select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+ORCL1
+</pre></div>
+
+
+</li>
+<li>
+<p>Let's create a user named <code>test</code> which is identified by <code>testpwd</code> password. Of course, you may change the name and password to whatever you want. </p>
+<div class="highlight"><pre><span></span>SQL&gt; ALTER SESSION SET CONTAINER = orclpdb1;
+
+Session altered.
+
+SQL&gt; grant connect, resource to test identified by testpwd container=current;
+
+Grant succeeded.
+
+SQL&gt; GRANT CREATE SESSION TO test container=current;
+
+Grant succeeded.
+</pre></div>
+
+
+</li>
+</ol>
+<h3>That's it!</h3>
+<p>We are all set now. We have a database running. We have a user in it. For reference, here is configuration that I used to connect SQLDeveloper via <code>test</code> user to the database</p>
+<p><img src="https://svovk.github.io/images/20180717_oracle_database_in_a_docker_container/sqldeveloper_new_connection.png" width="100%" alt="SQL Developer New Connection"></p>
+<h3>How to stop/restart created container</h3>
+<p>Sooner or later you will need to stop the container. An important thing to keep in mind - it is recommended to give Oracle additional time for shutdown activities. By default, when you stop a container Docker waits 10 seconds and then kills it. This may be too tight for Oracle Database. Let's make Docker wait up to one minute.</p>
+<div class="highlight"><pre><span></span>docker stop -t 60 oracle-db12.2-ee
+</pre></div>
+
+
+<p>If you didn't remove stopped container, it remains available and you may start it again with following</p>
+<div class="highlight"><pre><span></span>docker start oracle-db12.2-ee
+</pre></div>
+
+
+<p>This command will start the container in background mode. You might also want to check its logs:</p>
+<div class="highlight"><pre><span></span>docker logs oracle-db12.2-ee
+</pre></div>
+
+
+<p><br><br>That's all that have for this post, my best wishes in using Docker!</p>
                 </div>
                 <footer class="text-right">
                     <p>- Sergei Vovk</p>
