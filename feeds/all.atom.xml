@@ -1,5 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-07-17T10:20:00+03:00</updated><entry><title>Walkthrough - Creating an Oracle Database Docker Image</title><link href="https://svovk.github.io/walkthrough-creating-an-oracle-database-docker-image.html" rel="alternate"></link><published>2018-07-17T10:20:00+03:00</published><updated>2018-07-17T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-07-17:/walkthrough-creating-an-oracle-database-docker-image.html</id><summary type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't want to leave developers working with their software aside of this revolution and supports running many of their product within containers. In this post, I will go through steps of setting up a container having Oracle Database on board. We will need just a couple of things for it:&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-08-08T10:00:00+03:00</updated><entry><title>Queries to start troubleshooting an Oracle Text index</title><link href="https://svovk.github.io/queries-to-start-troubleshooting-an-oracle-text-index.html" rel="alternate"></link><published>2018-08-08T10:00:00+03:00</published><updated>2018-08-08T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-08-08:/queries-to-start-troubleshooting-an-oracle-text-index.html</id><summary type="html">&lt;p&gt;Oracle Text is a full-text search engine available out of the box in all modern Oracle Database distributions. Its capabilities are integrated absolutely seamlessly into SQL and it might be a decent choice for providing Google-like search in Oracle ecosystems. &lt;/p&gt;
+&lt;p&gt;In the real world, it is successfully used in many …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Oracle Text is a full-text search engine available out of the box in all modern Oracle Database distributions. Its capabilities are integrated absolutely seamlessly into SQL and it might be a decent choice for providing Google-like search in Oracle ecosystems. &lt;/p&gt;
+&lt;p&gt;In the real world, it is successfully used in many business-grade software (including shipped by Oracle). I frequently work with this sort of systems. Inevitably it means that I face with different kinds of issues including related to Oracle Text. In this post, I will share few basic queries that I find useful for starting troubleshooting problems in Oracle Text indexes.&lt;/p&gt;
+&lt;h3&gt;General Information&lt;/h3&gt;
+&lt;p&gt;The first query is not directly related to Oracle Text. Although, often it makes sense to start an investigation by getting a definition of the table you experience the problem with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;select&lt;/span&gt; &lt;span class="n"&gt;dbms_metadata&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_ddl&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;TABLE&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;lt;TABLE_NAME&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;lt;OWNER&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;from&lt;/span&gt; &lt;span class="n"&gt;dual&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The following 2 queries have a lot of information in common. Although I usually run them both. The first one generates a script that may be used to set up specified index. The second one generates a human-readable report describing index properties.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;select&lt;/span&gt; &lt;span class="n"&gt;ctx_report&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_index_script&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;lt;index_name&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;from&lt;/span&gt; &lt;span class="n"&gt;dual&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="k"&gt;select&lt;/span&gt; &lt;span class="n"&gt;ctx_report&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;describe_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&amp;lt;index_name&amp;gt;&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;from&lt;/span&gt; &lt;span class="n"&gt;dual&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Row-level queries&lt;/h3&gt;
+&lt;p&gt;The question that arises almost always - are all rows of a table indexed? Here is a query that may answer it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;
+  &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;TABLE_NAME&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+ &lt;span class="k"&gt;WHERE&lt;/span&gt; &lt;span class="n"&gt;rowid&lt;/span&gt; &lt;span class="k"&gt;not&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;textkey&lt;/span&gt;
+          &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;dr$files_content_idx$k&lt;/span&gt;
+    &lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Although, if some row isn't indexed, it doesn't necessary means that something is wrong. For example, NULL values aren't eligible for indexing. Also, the row may be simply waiting in the queue. Here is a query that shows rows pending to be processed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;
+  &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;ctxsys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dr$pending&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt;
+  &lt;span class="k"&gt;JOIN&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;TABLE_NAME&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;
+    &lt;span class="k"&gt;ON&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rowid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pnd_rowid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Though "real" errors sometimes occur as well. You may find all affected rowids in issue-reporting table. Here is how to join it with your target table:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;err_timestamp&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;err_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;
+  &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;ctxsys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dr$index_error&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
+  &lt;span class="k"&gt;JOIN&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;TABLE_NAME&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;
+    &lt;span class="k"&gt;ON&lt;/span&gt; &lt;span class="n"&gt;t&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rowid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ERR_TEXTKEY&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Summary queries&lt;/h3&gt;
+&lt;p&gt;It also is easy to get an overview of what is going on with following queries. They select data from database views which are based on the same &lt;code&gt;ctxsys.dr$pending&lt;/code&gt; and &lt;code&gt;ctxsys.dr$index_error&lt;/code&gt; tables.&lt;/p&gt;
+&lt;p&gt;Number of rows pending to be indexed: &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;pnd_index_name&lt;/span&gt; &lt;span class="n"&gt;index_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+         &lt;span class="k"&gt;count&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;count&lt;/span&gt;
+    &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;ctxsys&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ctx_user_pending&lt;/span&gt;
+&lt;span class="k"&gt;GROUP&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="n"&gt;pnd_index_name&lt;/span&gt;
+&lt;span class="k"&gt;ORDER&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Errors count:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="k"&gt;SELECT&lt;/span&gt; &lt;span class="n"&gt;err_index_name&lt;/span&gt; &lt;span class="n"&gt;index_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+         &lt;span class="n"&gt;err_text&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+         &lt;span class="k"&gt;count&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;count&lt;/span&gt;
+    &lt;span class="k"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;ctx_user_index_errors&lt;/span&gt;
+&lt;span class="k"&gt;GROUP&lt;/span&gt; &lt;span class="k"&gt;BY&lt;/span&gt; &lt;span class="n"&gt;err_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+         &lt;span class="n"&gt;err_index_name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h3&gt;Afterword&lt;/h3&gt;
+&lt;p&gt;While Oracle Text is a black box in many aspects, it is possible to transparently check coverage of its indexes. It makes life of the maintaining personnel much easier. Though don't expect that you always will be able to extract some useful information from the error messages produced. Prepare yourself to face things like&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;DRG-11207: user filter command exited with status 3
+DRG-00100: internal error, arguments : [50200],[drugi.c],[557],[],[]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;DRG-11207: user filter command exited with status 1
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;You'll have to contact Oracle support to troubleshoot them. Still some of the messages are self-explaining. A couple of examples that I saw recently:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;DRG-11207: user filter command exited with status 1
+DRG-11223: Third-party filter indicates this document is password protected or encrypted.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;DRG-11207: user filter command exited with status 1
+DRG-11222: Third-party filter does not support this known document format.
+&lt;/pre&gt;&lt;/div&gt;</content><category term="Oracle Database"></category><category term="Oracle Text"></category></entry><entry><title>Walkthrough - Creating an Oracle Database Docker Image</title><link href="https://svovk.github.io/walkthrough-creating-an-oracle-database-docker-image.html" rel="alternate"></link><published>2018-07-17T10:20:00+03:00</published><updated>2018-07-17T10:20:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-07-17:/walkthrough-creating-an-oracle-database-docker-image.html</id><summary type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Docker containerization is super hot nowadays. Among the things I like the most - hey, it allows me to run Linux software on my Mac which makes my life much easier. Oracle Database is one of the products that aren't shipped for OS X which I use frequently. Fortunately, Oracle doesn't want to leave developers working with their software aside of this revolution and supports running many of their product within containers. In this post, I will go through steps of setting up a container having Oracle Database on board. We will need just a couple of things for it:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;Docker (surprised?)&lt;/li&gt;
 &lt;li&gt;Oracle account&lt;/li&gt;
