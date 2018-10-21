@@ -1,5 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Oracle Database</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/oracle-database.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-08-08T10:00:00+03:00</updated><entry><title>Queries to start troubleshooting an Oracle Text index</title><link href="https://svovk.github.io/queries-to-start-troubleshooting-an-oracle-text-index.html" rel="alternate"></link><published>2018-08-08T10:00:00+03:00</published><updated>2018-08-08T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-08-08:/queries-to-start-troubleshooting-an-oracle-text-index.html</id><summary type="html">&lt;p&gt;Oracle Text is a full-text search engine available out of the box in all modern Oracle Database distributions. Its capabilities are integrated absolutely seamlessly into SQL and it might be a decent choice for providing Google-like search in Oracle ecosystems. &lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Oracle Database</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/oracle-database.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-10-21T10:00:00+03:00</updated><entry><title>Transaction invalidation in PostgreSQL</title><link href="https://svovk.github.io/transaction-invalidation-in-postgresql.html" rel="alternate"></link><published>2018-10-21T10:00:00+03:00</published><updated>2018-10-21T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-21:/transaction-invalidation-in-postgresql.html</id><summary type="html">&lt;p&gt;I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn't a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions.&lt;/p&gt;
+&lt;h2&gt;Statement-level rollback …&lt;/h2&gt;</summary><content type="html">&lt;p&gt;I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn't a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions.&lt;/p&gt;
+&lt;h2&gt;Statement-level rollback&lt;/h2&gt;
+&lt;p&gt;Oracle (and in fact most of other RDBMS that I know) does a thing called statement-level rollback. In few words, it means that if some SQL statement fails with an exception, it will be rolled back. If the statement happened to be in a transaction, it also will be rolled back but the transaction itself will remain valid. Of course, user will be informed about the problem. Although the user will still have the ability to commit valid changes that were(and will be) made in the transaction.&lt;/p&gt;
+&lt;h3&gt;Test - Oracle&lt;/h3&gt;
+&lt;p&gt;For Oracle demonstration I will use &lt;code&gt;SQL*PLus&lt;/code&gt; command-line client.&lt;/p&gt;
+&lt;p&gt;Suppose you have following relation&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;CREATE&lt;/span&gt; &lt;span class="k"&gt;TABLE&lt;/span&gt; &lt;span class="n"&gt;test&lt;/span&gt;
+&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;id&lt;/span&gt;   &lt;span class="nb"&gt;NUMBER&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="k"&gt;data&lt;/span&gt; &lt;span class="n"&gt;VARCHAR2&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;50&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="k"&gt;CONSTRAINT&lt;/span&gt; &lt;span class="n"&gt;test_pk&lt;/span&gt; &lt;span class="k"&gt;PRIMARY&lt;/span&gt; &lt;span class="k"&gt;KEY&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;filled with some some initial data&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; insert into test (id, data) values (1, &amp;#39;a&amp;#39;);
+1 row created.
+SQL&amp;gt; insert into test (id, data) values (2, &amp;#39;b&amp;#39;);
+1 row created.
+SQL&amp;gt; insert into test (id, data) values (3, &amp;#39;c&amp;#39;);
+1 row created.
+SQL&amp;gt; commit;
+Commit complete.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; select * from test;
+    ID DATA
+---------- --------------------------------------------------
+     1 a
+     2 b
+     3 c
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's try to issue a transaction attempting to insert 3 tuples including one that violates the unique constraint:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; insert into test (id, data) values (5, &amp;#39;e&amp;#39;);
+1 row created.
+SQL&amp;gt; insert into test (id, data) values (3, &amp;#39;c&amp;#39;);
+
+insert into test (id, data) values (3, &amp;#39;c&amp;#39;)
+*
+ERROR at line 1:
+ORA-00001: unique constraint (TEST.TEST_PK) violated
+
+SQL&amp;gt; insert into test (id, data) values (4, &amp;#39;d&amp;#39;);
+1 row created.
+SQL&amp;gt; commit;
+Commit complete.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The question is what will be stored in the DB (if anything at all)? For &lt;em&gt;Oracle&lt;/em&gt; the answer is &lt;strong&gt;everything except the failed statement&lt;/strong&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;SQL&amp;gt; select * from test;
+    ID DATA
+---------- --------------------------------------------------
+     1 a
+     2 b
+     3 c
+     5 e
+     4 d
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Test - PostgreSQL&lt;/h2&gt;
+&lt;p&gt;For Postgres demonstration I will use &lt;code&gt;psql&lt;/code&gt; client. Note that it's important to switch off autocommit option (&lt;code&gt;\set AUTOCOMMIT off&lt;/code&gt;) before the test.&lt;/p&gt;
+&lt;p&gt;Let's say there is a table like one in the previous test&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;CREATE TABLE test
+(
+  id integer,
+  data varchar(50),
+  CONSTRAINT test_pk PRIMARY KEY (id)
+);
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and holding the same initial data:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test=# insert into test (id, data) values (1, &amp;#39;a&amp;#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (2, &amp;#39;b&amp;#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (3, &amp;#39;c&amp;#39;);
+INSERT 0 1
+test=# commit;
+COMMIT
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test=# select * from test;
+ id | data 
+----+------
+  1 | a
+  2 | b
+  3 | c
+(3 rows)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's issue a transaction attempting to inserting 3 tuples including one violating the unique constraint on the table:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test=# insert into test (id, data) values (5, &amp;#39;e&amp;#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (3, &amp;#39;c&amp;#39;);
+ERROR:  duplicate key value violates unique constraint &amp;quot;test_pk&amp;quot;
+DETAIL:  Key (id)=(3) already exists.
+test=# insert into test (id, data) values (4, &amp;#39;d&amp;#39;);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+test=# commit;
+ROLLBACK
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;The question is what will be stored into the DB (if something at all)? For &lt;em&gt;PostgreSQL&lt;/em&gt; the answer is &lt;strong&gt;nothing&lt;/strong&gt;!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test=# select * from test;
+ id | data 
+----+------
+  1 | a
+  2 | b
+  3 | c
+(3 rows)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;Transaction invalidation&lt;/h2&gt;
+&lt;p&gt;Actually, Postgres documentation says about this behavior in the second statement of "Transactions" chapter, but very shortly:&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;if some failure occurs that prevents the transaction from completing, then none of the steps affect the database at all.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;It worth to mention that &lt;code&gt;psql&lt;/code&gt; has &lt;code&gt;\set ON_ERROR_ROLLBACK ON&lt;/code&gt; mode which allows mimicking Oracle behavior. Although it doesn't change transaction processing logic on DB side - it just implicitly creates a SAVEPOINT before each statement and rollbacks to it in case of an error.&lt;/p&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;While most of RDBMS do statement-level rollback PostgreSQL doesn't. I can't say if it is right or wrong. It is just the way it is. There are definitely both cons and pros for each transaction processing approach. Although the following is for sure - if you use Postgres you should keep in mind how transactions work in it.&lt;/p&gt;
+&lt;p&gt;Also, if you need Oracle-like behavior in Postgres you may emulate it by setting savepoints in your transaction although it isn't a free lunch.&lt;/p&gt;</content><category term="Oracle Database"></category><category term="PostgreSQL"></category></entry><entry><title>Queries to start troubleshooting an Oracle Text index</title><link href="https://svovk.github.io/queries-to-start-troubleshooting-an-oracle-text-index.html" rel="alternate"></link><published>2018-08-08T10:00:00+03:00</published><updated>2018-08-08T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-08-08:/queries-to-start-troubleshooting-an-oracle-text-index.html</id><summary type="html">&lt;p&gt;Oracle Text is a full-text search engine available out of the box in all modern Oracle Database distributions. Its capabilities are integrated absolutely seamlessly into SQL and it might be a decent choice for providing Google-like search in Oracle ecosystems. &lt;/p&gt;
 &lt;p&gt;In the real world, it is successfully used in many …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Oracle Text is a full-text search engine available out of the box in all modern Oracle Database distributions. Its capabilities are integrated absolutely seamlessly into SQL and it might be a decent choice for providing Google-like search in Oracle ecosystems. &lt;/p&gt;
 &lt;p&gt;In the real world, it is successfully used in many business-grade software (including shipped by Oracle). I frequently work with this sort of systems. Inevitably it means that I face with different kinds of issues including related to Oracle Text. In this post, I will share few basic queries that I find useful for starting troubleshooting problems in Oracle Text indexes.&lt;/p&gt;
 &lt;h3&gt;General Information&lt;/h3&gt;

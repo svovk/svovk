@@ -6,10 +6,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="keywords" content="Windows 10" />
+        <meta name="author" content="Sergei Vovk" />
+        <meta name="keywords" content="Oracle Database,PostgreSQL" />
+        <meta name="description" content="I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn&#39;t a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions. Statement-level rollback …" />
 
 
-    <title>Windows 10 - Sergei Vovk | Blog</title>
+    <title>Transaction invalidation in PostgreSQL - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -146,7 +148,7 @@
                             <span class="badge pull-right categorybadge">1</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/oracle-database.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Oracle Database
@@ -175,23 +177,178 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-<div class="row">
-    <div class="col-lg-9">
-        <header class="page-header">
-            <h1>Articles featuring Windows 10</h1>
-        </header>
+<section id="content">
+    <article>
+        <div class="row">
+            <div class="col-lg-9">
+                <header class="page-header">
+                    <h1>
+                        <a href="https://svovk.github.io/transaction-invalidation-in-postgresql.html"
+                           rel="bookmark"
+                           title="Permalink to Transaction invalidation in PostgreSQL">
+                            Transaction invalidation in PostgreSQL
+                        </a>
+                        <small>
+<div class="post-info">
+    <div class="publish-info-block">
+        <small>
+            <span class="published">
+                <i class="fa fa-calendar padding-small"></i><time datetime="2018-10-21T10:00:00+03:00"> Sun 21 October 2018</time>
+            </span>
+            <span class="category">
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/oracle-database.html">Oracle Database</a>
+            </span>
+            <span class="tags">
+                <i class="fa fa-tags padding-small"></i>
+                <a href="https://svovk.github.io/tag/oracle-database.html">Oracle Database</a> /                 <a href="https://svovk.github.io/tag/postgresql.html">PostgreSQL</a>            </span>
+        </small>
     </div>
-</div>
-<div class="row">
-    <div class="col-lg-9">
-            <article>
-                <h4>
-                    <time datetime="2018-05-08T10:20:00+03:00"> Tue 08 May 2018</time>
-                    <a href="https://svovk.github.io/how-to-install-oracle-developer-suite-on-windows-10.html">How to install Oracle Developer Suite on Windows 10</a>
-                </h4>
-            </article>
-    </div>
-</div>
+</div><!-- /.post-info -->                        </small>
+                    </h1>
+                </header>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="entry-content">
+                    <p>I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn't a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions.</p>
+<h2>Statement-level rollback</h2>
+<p>Oracle (and in fact most of other RDBMS that I know) does a thing called statement-level rollback. In few words, it means that if some SQL statement fails with an exception, it will be rolled back. If the statement happened to be in a transaction, it also will be rolled back but the transaction itself will remain valid. Of course, user will be informed about the problem. Although the user will still have the ability to commit valid changes that were(and will be) made in the transaction.</p>
+<h3>Test - Oracle</h3>
+<p>For Oracle demonstration I will use <code>SQL*PLus</code> command-line client.</p>
+<p>Suppose you have following relation</p>
+<div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test</span>
+<span class="p">(</span>
+    <span class="n">id</span>   <span class="nb">NUMBER</span><span class="p">,</span>
+    <span class="k">data</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span>
+    <span class="k">CONSTRAINT</span> <span class="n">test_pk</span> <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+
+
+<p>filled with some some initial data</p>
+<div class="highlight"><pre><span></span>SQL&gt; insert into test (id, data) values (1, &#39;a&#39;);
+1 row created.
+SQL&gt; insert into test (id, data) values (2, &#39;b&#39;);
+1 row created.
+SQL&gt; insert into test (id, data) values (3, &#39;c&#39;);
+1 row created.
+SQL&gt; commit;
+Commit complete.
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>SQL&gt; select * from test;
+    ID DATA
+---------- --------------------------------------------------
+     1 a
+     2 b
+     3 c
+</pre></div>
+
+
+<p>Let's try to issue a transaction attempting to insert 3 tuples including one that violates the unique constraint:</p>
+<div class="highlight"><pre><span></span>SQL&gt; insert into test (id, data) values (5, &#39;e&#39;);
+1 row created.
+SQL&gt; insert into test (id, data) values (3, &#39;c&#39;);
+
+insert into test (id, data) values (3, &#39;c&#39;)
+*
+ERROR at line 1:
+ORA-00001: unique constraint (TEST.TEST_PK) violated
+
+SQL&gt; insert into test (id, data) values (4, &#39;d&#39;);
+1 row created.
+SQL&gt; commit;
+Commit complete.
+</pre></div>
+
+
+<p>The question is what will be stored in the DB (if anything at all)? For <em>Oracle</em> the answer is <strong>everything except the failed statement</strong>.</p>
+<div class="highlight"><pre><span></span>SQL&gt; select * from test;
+    ID DATA
+---------- --------------------------------------------------
+     1 a
+     2 b
+     3 c
+     5 e
+     4 d
+</pre></div>
+
+
+<h2>Test - PostgreSQL</h2>
+<p>For Postgres demonstration I will use <code>psql</code> client. Note that it's important to switch off autocommit option (<code>\set AUTOCOMMIT off</code>) before the test.</p>
+<p>Let's say there is a table like one in the previous test</p>
+<div class="highlight"><pre><span></span>CREATE TABLE test
+(
+  id integer,
+  data varchar(50),
+  CONSTRAINT test_pk PRIMARY KEY (id)
+);
+</pre></div>
+
+
+<p>and holding the same initial data:</p>
+<div class="highlight"><pre><span></span>test=# insert into test (id, data) values (1, &#39;a&#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (2, &#39;b&#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (3, &#39;c&#39;);
+INSERT 0 1
+test=# commit;
+COMMIT
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>test=# select * from test;
+ id | data 
+----+------
+  1 | a
+  2 | b
+  3 | c
+(3 rows)
+</pre></div>
+
+
+<p>Let's issue a transaction attempting to inserting 3 tuples including one violating the unique constraint on the table:</p>
+<div class="highlight"><pre><span></span>test=# insert into test (id, data) values (5, &#39;e&#39;);
+INSERT 0 1
+test=# insert into test (id, data) values (3, &#39;c&#39;);
+ERROR:  duplicate key value violates unique constraint &quot;test_pk&quot;
+DETAIL:  Key (id)=(3) already exists.
+test=# insert into test (id, data) values (4, &#39;d&#39;);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+test=# commit;
+ROLLBACK
+</pre></div>
+
+
+<p>The question is what will be stored into the DB (if something at all)? For <em>PostgreSQL</em> the answer is <strong>nothing</strong>!</p>
+<div class="highlight"><pre><span></span>test=# select * from test;
+ id | data 
+----+------
+  1 | a
+  2 | b
+  3 | c
+(3 rows)
+</pre></div>
+
+
+<h2>Transaction invalidation</h2>
+<p>Actually, Postgres documentation says about this behavior in the second statement of "Transactions" chapter, but very shortly:</p>
+<p><em>if some failure occurs that prevents the transaction from completing, then none of the steps affect the database at all.</em></p>
+<p>It worth to mention that <code>psql</code> has <code>\set ON_ERROR_ROLLBACK ON</code> mode which allows mimicking Oracle behavior. Although it doesn't change transaction processing logic on DB side - it just implicitly creates a SAVEPOINT before each statement and rollbacks to it in case of an error.</p>
+<h2>Conclusion</h2>
+<p>While most of RDBMS do statement-level rollback PostgreSQL doesn't. I can't say if it is right or wrong. It is just the way it is. There are definitely both cons and pros for each transaction processing approach. Although the following is for sure - if you use Postgres you should keep in mind how transactions work in it.</p>
+<p>Also, if you need Oracle-like behavior in Postgres you may emulate it by setting savepoints in your transaction although it isn't a free lunch.</p>
+                </div>
+                <footer class="text-right">
+                    <p>- Sergei Vovk</p>
+                </footer>
+            </div>
+        </div>
+    </article>
+</section>
 <footer>
     <hr>
     <div class="row">
@@ -230,24 +387,6 @@
         })();
     </script>
     <!-- End Google Analytics Code -->
-<script>
-    function FadeInOnScroll(ObjectList){
-        ObjectList.each(function(i) {
-            var bottom_of_object = $(this).position().top + $(this).outerHeight();
-            var bottom_of_window = $(window).scrollTop() + $(window).height();
 
-            if( bottom_of_window > bottom_of_object ){
-                $(this).fadeTo(750,1);
-            }
-        });
-    }
-
-    articles = $("article").fadeTo(0, 0.05);
-    FadeInOnScroll(articles)
-
-    $(window).scroll(function() {
-        FadeInOnScroll(articles)
-    });
-</script>
 </body>
 </html>
