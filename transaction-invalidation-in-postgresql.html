@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="author" content="Sergei Vovk" />
         <meta name="keywords" content="Oracle Database,PostgreSQL" />
-        <meta name="description" content="I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn&#39;t a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions. Statement-level rollback …" />
+        <meta name="description" content="A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a …" />
 
 
     <title>Transaction invalidation in PostgreSQL - Sergei Vovk | Blog</title>
@@ -211,7 +211,7 @@
         <div class="row">
             <div class="col-lg-9">
                 <div class="entry-content">
-                    <p>I started to work on a product where PostgreSQL is used as a primary database. Before that, I used Oracle a lot. It wasn't a surprise that there are a lot of distinctions between these databases. In this post, I would like to discuss one of these distinctions.</p>
+                    <p>A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a lot of distinctions between these databases. In this post, I would like to discuss one of them.</p>
 <h2>Statement-level rollback</h2>
 <p>Oracle (and in fact most of other RDBMS that I know) does a thing called statement-level rollback. In few words, it means that if some SQL statement fails with an exception, it will be rolled back. If the statement happened to be in a transaction, it also will be rolled back but the transaction itself will remain valid. Of course, user will be informed about the problem. Although the user will still have the ability to commit valid changes that were(and will be) made in the transaction.</p>
 <h3>Test - Oracle</h3>
