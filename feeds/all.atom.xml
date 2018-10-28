@@ -1,5 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-10-21T10:00:00+03:00</updated><entry><title>Transaction invalidation in PostgreSQL</title><link href="https://svovk.github.io/transaction-invalidation-in-postgresql.html" rel="alternate"></link><published>2018-10-21T10:00:00+03:00</published><updated>2018-10-21T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-21:/transaction-invalidation-in-postgresql.html</id><summary type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a lot of distinctions between these databases. In this post, I would like to discuss one of them.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/all.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-10-27T00:10:00+03:00</updated><entry><title>PostgreSQL JDBC driver batch update counts</title><link href="https://svovk.github.io/postgresql-jdbc-driver-batch-update-counts.html" rel="alternate"></link><published>2018-10-27T00:10:00+03:00</published><updated>2018-10-27T00:10:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-27:/postgresql-jdbc-driver-batch-update-counts.html</id><summary type="html">&lt;p&gt;I encountered an unusual Postgres driver behavior several weeks ago when I was investigating an issue that was reproducible &lt;em&gt;only&lt;/em&gt; when an application was running on PostgreSQL database. Everything worked just fine on H2 database. The peculiarity turned out to be closely related to PostgreSQL &lt;a href="https://svovk.github.io/transaction-invalidation-in-postgresql.html"&gt;transaction invalidation&lt;/a&gt; semantics. &lt;/p&gt;
+&lt;h2&gt;Batch update …&lt;/h2&gt;</summary><content type="html">&lt;p&gt;I encountered an unusual Postgres driver behavior several weeks ago when I was investigating an issue that was reproducible &lt;em&gt;only&lt;/em&gt; when an application was running on PostgreSQL database. Everything worked just fine on H2 database. The peculiarity turned out to be closely related to PostgreSQL &lt;a href="https://svovk.github.io/transaction-invalidation-in-postgresql.html"&gt;transaction invalidation&lt;/a&gt; semantics. &lt;/p&gt;
+&lt;h2&gt;Batch update counts&lt;/h2&gt;
+&lt;p&gt;Using JDBC's &lt;code&gt;Statement.executeBatch&lt;/code&gt; one may submit a batch of statements for execution. As JDBC documentation says "if all commands execute successfully" the method "returns an array of update counts". If some of the commands fail &lt;code&gt;BatchUpdateException&lt;/code&gt; is thrown. This exception has a method which also allows to retrieve update counts - &lt;code&gt;BatchUpdateException.getUpdateCounts&lt;/code&gt;. &lt;/p&gt;
+&lt;p&gt;By looking at update counts returned from the exception, we should be able to identify which statements failed. Here is what JDBC documentation says&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If the driver continues processing after a failure, the array returned by the method BatchUpdateException.getUpdateCounts will have an element for every command in the batch rather than only elements for the commands that executed successfully before the error. In the case where the driver continues processing commands, the array element for any command that failed is Statement.EXECUTE_FAILED.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2&gt;The difference&lt;/h2&gt;
+&lt;p&gt;To follow PostgreSQL transaction semantics, if one statement fails in a batch JDBC driver stamps &lt;code&gt;Statement.EXECUTE_FAILED&lt;/code&gt; result for all the statements. On other hand, as most of the other databases do so-called statement-level rollbacks their JDBC drivers return a different result.&lt;/p&gt;
+&lt;p&gt;Let's check on an example. Suppose there is a table with a primary key constraint:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;CREATE&lt;/span&gt; &lt;span class="k"&gt;TABLE&lt;/span&gt; &lt;span class="n"&gt;test&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt; &lt;span class="nb"&gt;integer&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;data&lt;/span&gt; &lt;span class="nb"&gt;varchar&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;50&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="k"&gt;CONSTRAINT&lt;/span&gt; &lt;span class="n"&gt;test_pk&lt;/span&gt; &lt;span class="k"&gt;PRIMARY&lt;/span&gt; &lt;span class="k"&gt;KEY&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;id&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and we issue 2 batches of updates. 1st one containing some initial data&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Statement&lt;/span&gt; &lt;span class="n"&gt;stmt&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;createStatement&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (1, &amp;#39;a&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (2, &amp;#39;b&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (3, &amp;#39;c&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;executeBatch&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and 2nd one (which contains one row violating the primary key)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Statement&lt;/span&gt; &lt;span class="n"&gt;stmt&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;createStatement&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (4, &amp;#39;d&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (3, &amp;#39;c&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (5, &amp;#39;e&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;executeBatch&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;For most of RDBMS (including H2), results would be &lt;code&gt;[1,1,1]&lt;/code&gt; for the first batch and &lt;code&gt;[1, Statement.EXECUTE_FAILED, 1]&lt;/code&gt; for the second. From this result, you may say that 2nd statement wasn't ok.&lt;/p&gt;
+&lt;p&gt;For PostgreSQL, results would be &lt;code&gt;[1,1,1]&lt;/code&gt; for the first batch and &lt;code&gt;[Statement.EXECUTE_FAILED, Statement.EXECUTE_FAILED, Statement.EXECUTE_FAILED]&lt;/code&gt; for the second. In this case, we can't say if some of the statement were good. The result only says us that if we issue a commit, nothing from the batch will be persisted.&lt;/p&gt;
+&lt;h2&gt;Conslusion&lt;/h2&gt;
+&lt;p&gt;I agree with such driver behaviour as it is consistent with how PostgreSQL works. It worth to say an obvious thing here - no matter if you work on the level of JDBC abstractions you still should understand how your database engine works.&lt;/p&gt;
+&lt;h2&gt;For code geeks only&lt;/h2&gt;
+&lt;p&gt;Here is a test that demonstrates the difference&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import static&lt;/span&gt; &lt;span class="nn"&gt;org.hamcrest.CoreMatchers.is&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import static&lt;/span&gt; &lt;span class="nn"&gt;org.junit.Assert.assertThat&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import static&lt;/span&gt; &lt;span class="nn"&gt;ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.junit.After&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.junit.Before&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;org.junit.Test&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;ru.yandex.qatools.embed.postgresql.EmbeddedPostgres&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.io.IOException&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.sql.BatchUpdateException&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.sql.Connection&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.sql.DriverManager&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.sql.SQLException&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.sql.Statement&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.util.ArrayList&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.util.Arrays&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.util.List&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;java.util.stream.Collectors&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+
+&lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kd"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;AppTest&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+
+    &lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="kd"&gt;static&lt;/span&gt; &lt;span class="kd"&gt;final&lt;/span&gt; &lt;span class="n"&gt;String&lt;/span&gt; &lt;span class="n"&gt;CREATE_TABLE&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+            &lt;span class="s"&gt;&amp;quot;CREATE TABLE test (id integer, data varchar(50),CONSTRAINT test_pk PRIMARY KEY (id))&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;EmbeddedPostgres&lt;/span&gt; &lt;span class="n"&gt;postgres&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+    &lt;span class="kd"&gt;private&lt;/span&gt; &lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;Connection&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;connections&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@Before&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;setUp&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="kd"&gt;throws&lt;/span&gt; &lt;span class="n"&gt;IOException&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;SQLException&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;postgres&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;EmbeddedPostgres&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;V9_6&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+        &lt;span class="n"&gt;connections&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;ArrayList&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+
+        &lt;span class="n"&gt;connections&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;add&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DriverManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getConnection&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;postgres&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;start&lt;/span&gt;&lt;span class="o"&gt;()));&lt;/span&gt;
+        &lt;span class="n"&gt;connections&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;add&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DriverManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getConnection&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;jdbc:h2:mem:test;MODE=PostgreSQL&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Connection&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;connections&lt;/span&gt;&lt;span class="o"&gt;){&lt;/span&gt;
+            &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;setAutoCommit&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="kc"&gt;false&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+
+            &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Statement&lt;/span&gt; &lt;span class="n"&gt;stmt&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;createStatement&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;execute&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;CREATE_TABLE&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="c1"&gt;// initial data&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (1, &amp;#39;a&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (2, &amp;#39;b&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (3, &amp;#39;c&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;System&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;out&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Arrays&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;toString&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;executeBatch&lt;/span&gt;&lt;span class="o"&gt;()));&lt;/span&gt;
+            &lt;span class="o"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;commit&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@Test&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;testBatchUpdate&lt;/span&gt;&lt;span class="o"&gt;()&lt;/span&gt; &lt;span class="kd"&gt;throws&lt;/span&gt; &lt;span class="n"&gt;SQLException&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+        &lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;updateResults&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="k"&gt;new&lt;/span&gt; &lt;span class="n"&gt;ArrayList&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Connection&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;connections&lt;/span&gt;&lt;span class="o"&gt;){&lt;/span&gt;
+            &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Statement&lt;/span&gt; &lt;span class="n"&gt;stmt&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;createStatement&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                &lt;span class="c1"&gt;// batch containing one row violating constraint&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (4, &amp;#39;d&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (3, &amp;#39;c&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;addBatch&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;insert into test (id, data) values (5, &amp;#39;e&amp;#39;)&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;stmt&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;executeBatch&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+                &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;commit&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+            &lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="k"&gt;catch&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;BatchUpdateException&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                &lt;span class="n"&gt;System&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;out&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Arrays&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;toString&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getUpdateCounts&lt;/span&gt;&lt;span class="o"&gt;()));&lt;/span&gt;
+                &lt;span class="n"&gt;updateResults&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;add&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;
+                    &lt;span class="n"&gt;Arrays&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;stream&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;e&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getUpdateCounts&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt;
+                            &lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;mapToObj&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;Statement&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;EXECUTE_FAILED&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                                    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;FAILED&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+                                &lt;span class="o"&gt;}&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                                    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;DONE&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+                                &lt;span class="o"&gt;}&lt;/span&gt;
+                            &lt;span class="o"&gt;}).&lt;/span&gt;&lt;span class="na"&gt;collect&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Collectors&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;toList&lt;/span&gt;&lt;span class="o"&gt;())&lt;/span&gt;
+                &lt;span class="o"&gt;);&lt;/span&gt;
+                &lt;span class="n"&gt;System&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;out&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;println&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&amp;gt; &amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;getMetaData&lt;/span&gt;&lt;span class="o"&gt;().&lt;/span&gt;&lt;span class="na"&gt;getDatabaseProductName&lt;/span&gt;&lt;span class="o"&gt;()+&lt;/span&gt;&lt;span class="s"&gt;&amp;quot; database batch execution results: &amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;
+                                    &lt;span class="n"&gt;updateResults&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;get&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;updateResults&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;size&lt;/span&gt;&lt;span class="o"&gt;()-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+            &lt;span class="o"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;conn&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;rollback&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+
+        &lt;span class="c1"&gt;// check if the batch update counts are the same&lt;/span&gt;
+        &lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;previousResults&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;String&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;currentResults&lt;/span&gt; &lt;span class="o"&gt;:&lt;/span&gt; &lt;span class="n"&gt;updateResults&lt;/span&gt;&lt;span class="o"&gt;){&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;previousResults&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="kc"&gt;null&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="o"&gt;{&lt;/span&gt;
+                &lt;span class="n"&gt;assertThat&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;previousResults&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="n"&gt;is&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;currentResults&lt;/span&gt;&lt;span class="o"&gt;));&lt;/span&gt;
+            &lt;span class="o"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;previousResults&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;currentResults&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
+        &lt;span class="o"&gt;}&lt;/span&gt;
+
+    &lt;span class="o"&gt;}&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@After&lt;/span&gt;
+    &lt;span class="kd"&gt;public&lt;/span&gt; &lt;span class="kt"&gt;void&lt;/span&gt; &lt;span class="nf"&gt;tearDown&lt;/span&gt;&lt;span class="o"&gt;(){&lt;/span&gt;
+        &lt;span class="n"&gt;postgres&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;stop&lt;/span&gt;&lt;span class="o"&gt;();&lt;/span&gt;
+    &lt;span class="o"&gt;}&lt;/span&gt;
+&lt;span class="o"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;and maven dependencies that I used&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="nt"&gt;&amp;lt;dependencies&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;junit&lt;span class="nt"&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;junit&lt;span class="nt"&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;version&amp;gt;&lt;/span&gt;4.11&lt;span class="nt"&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;scope&amp;gt;&lt;/span&gt;test&lt;span class="nt"&gt;&amp;lt;/scope&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.postgresql&lt;span class="nt"&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;postgresql&lt;span class="nt"&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;version&amp;gt;&lt;/span&gt;42.2.5&lt;span class="nt"&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;com.h2database&lt;span class="nt"&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;h2&lt;span class="nt"&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;version&amp;gt;&lt;/span&gt;1.4.197&lt;span class="nt"&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;scope&amp;gt;&lt;/span&gt;test&lt;span class="nt"&gt;&amp;lt;/scope&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;ru.yandex.qatools.embed&lt;span class="nt"&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;postgresql-embedded&lt;span class="nt"&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;version&amp;gt;&lt;/span&gt;2.9&lt;span class="nt"&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+      &lt;span class="nt"&gt;&amp;lt;scope&amp;gt;&lt;/span&gt;test&lt;span class="nt"&gt;&amp;lt;/scope&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+  &lt;span class="nt"&gt;&amp;lt;/dependencies&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</content><category term="Java"></category><category term="JDBC"></category><category term="PostgreSQL"></category></entry><entry><title>Transaction invalidation in PostgreSQL</title><link href="https://svovk.github.io/transaction-invalidation-in-postgresql.html" rel="alternate"></link><published>2018-10-21T10:00:00+03:00</published><updated>2018-10-21T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-21:/transaction-invalidation-in-postgresql.html</id><summary type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a lot of distinctions between these databases. In this post, I would like to discuss one of them.&lt;/p&gt;
 &lt;h2&gt;Statement-level rollback&lt;/h2&gt;
 &lt;p&gt;Oracle (and in fact most of other RDBMS that I know) does a thing called statement-level rollback. In few words, it means that if some SQL statement fails with an exception, it will be rolled back. If the statement happened to be in a transaction, it also will be rolled back but the transaction itself will remain valid. Of course, user will be informed about the problem. Although the user will still have the ability to commit valid changes that were(and will be) made in the transaction.&lt;/p&gt;
 &lt;h3&gt;Test - Oracle&lt;/h3&gt;
