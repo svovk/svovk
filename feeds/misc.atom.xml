@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Misc</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/misc.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2019-05-02T11:36:00+03:00</updated><entry><title>How not to lose sanity taking MOOC lecture notes</title><link href="https://svovk.github.io/how-not-to-lose-sanity-taking-mooc-lecture-notes.html" rel="alternate"></link><published>2019-05-02T11:36:00+03:00</published><updated>2019-05-02T11:36:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2019-05-02:/how-not-to-lose-sanity-taking-mooc-lecture-notes.html</id><summary type="html">&lt;p&gt;This problem was a big deal for me. I like MOOCs, and I find it very valuable to make some notes during a course. Although it took time to find a way that fits my needs:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;ability to copy-paste images&lt;/li&gt;
+&lt;li&gt;easy way to insert math formulas&lt;/li&gt;
+&lt;li&gt;output with a table …&lt;/li&gt;&lt;/ul&gt;</summary><content type="html">&lt;p&gt;This problem was a big deal for me. I like MOOCs, and I find it very valuable to make some notes during a course. Although it took time to find a way that fits my needs:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;ability to copy-paste images&lt;/li&gt;
+&lt;li&gt;easy way to insert math formulas&lt;/li&gt;
+&lt;li&gt;output with a table of contents&lt;/li&gt;
+&lt;li&gt;spellchecking&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I tried numerous approaches, but each of them had some downsides:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Word - didn't like the way to include formulas. It took much more time to figure out how to enter a formula compared to LaTeX.&lt;/li&gt;
+&lt;li&gt;LibreOffice also had a problem with formulas plus image rendering was glitchy (at least on mac)&lt;/li&gt;
+&lt;li&gt;LaTeX was good for formulas although its syntax is too wordy. &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;I decided to fix the LaTeX approach as it looked like the most flexible one. Fortunately, it wasn't very hard to do that.&lt;/p&gt;
+&lt;h2&gt;Processing&lt;/h2&gt;
+&lt;p&gt;As I said writing directly in LaTeX was too verbose for me. At least for the purpose of making lecture notes. Although, I believed that LaTeX is a good option. It is an industry standard, has a very good reputation and it is definitely powerful enough to cover all my needs.&lt;/p&gt;
+&lt;p&gt;The thing is that it is obviously too powerful for that purpose and I don't need all of the LaTeX just to take notes.  But there is a minimalistic format that looks like a good fit - Markdown. Stop. Why don't just convert Markdown to LaTeX? And there is a good tool for that - &lt;strong&gt;Pandoc&lt;/strong&gt;. Here is how it may be used for the conversion:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pandoc --listings -s -f markdown -t latex -o output_file.tex input_file.md
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Note: &lt;code&gt;-s&lt;/code&gt; option is to generate header and footer. &lt;/p&gt;
+&lt;p&gt;Pandoc also is capable of converting directly to PDF (via tex engine)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pandoc --listings --pdf-engine=xelatex -f markdown -o output_file.pdf input_file.md
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Options used:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;--pdf-engine=xelatex&lt;/code&gt; is to use XeLaTeX engine which has few advantages over PdfLaTeX: may use system fonts, has better support for non-latin character encodings.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;--listings&lt;/code&gt; Use the listings package for LaTeX code blocks&lt;/li&gt;
+&lt;li&gt;if you would like to include a custom configuration into your latex file you may use &lt;code&gt;--include-in-header=listings-setup.tex&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Software setup&lt;/h3&gt;
+&lt;p&gt;You basically need 3 components:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Pandoc&lt;/strong&gt; may be installed with homebrew: &lt;code&gt;brew install pandoc&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;TeX&lt;/strong&gt; distribution. I use &lt;a href="http://www.tug.org/mactex/index.html"&gt;MacTeX&lt;/a&gt;. I had to install a couple of additional packages as pandoc printed some error messages while converting to PDF:&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;tlmgr install ucharcat&lt;/code&gt; (the error was &lt;code&gt;! LaTeX Error: File&lt;/code&gt;ucharcat.sty' not found.`)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;tlmgr install lm-math&lt;/code&gt; (the error was &lt;code&gt;! The font "latinmodern-math" cannot be found.&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;I use &lt;strong&gt;VimR&lt;/strong&gt; as an editor. It has Markdown highlighting, Markdown preview, spellchecking and handy &lt;a href="https://github.com/ferrine/md-img-paste.vim"&gt;md-img-paste&lt;/a&gt; plugin which lets you insert images from the buffer by pressing &lt;code&gt;\p&lt;/code&gt; (to be formal &lt;code&gt;&amp;lt;leader&amp;gt;p&lt;/code&gt;). If you don't like VIM I am sure that there are plenty of other good editors. &lt;/li&gt;
+&lt;/ul&gt;</content><category term="TeX"></category><category term="Markdown"></category><category term="Pandoc"></category></entry></feed>

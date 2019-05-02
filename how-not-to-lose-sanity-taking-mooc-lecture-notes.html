@@ -7,11 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="author" content="Sergei Vovk" />
-        <meta name="keywords" content="Agile PLM,Agile Database Schema" />
-        <meta name="description" content="Recently I was working on a data issue which prevented a person from using Optional Tab 1 of his Dashboard. When the user clicked on the tab, Agile showed &#34;Object does not exists&#34; error and nothing else appeared. Researching this issue brought me to understanding of some relations in Agile …" />
+        <meta name="keywords" content="TeX,Markdown,Pandoc" />
+        <meta name="description" content="This problem was a big deal for me. I like MOOCs, and I find it very valuable to make some notes during a course. Although it took time to find a way that fits my needs: ability to copy-paste images easy way to insert math formulas output with a table …" />
 
 
-    <title>Agile PLM Dashboard Optional Tabs - database tables - Sergei Vovk | Blog</title>
+    <title>How not to lose sanity taking MOOC lecture notes - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -134,7 +134,7 @@
                     </a>
                 </li>
                 <li class="panel anti-panel"><ul id="collapse-categories" class="sidebar_submenu collapse ">
-                    <li class="active">
+                    <li >
                         <a href="https://svovk.github.io/category/agile-plm.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Agile PLM
@@ -148,7 +148,7 @@
                             <span class="badge pull-right categorybadge">2</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/misc.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Misc
@@ -190,24 +190,24 @@
             <div class="col-lg-9">
                 <header class="page-header">
                     <h1>
-                        <a href="https://svovk.github.io/agile-plm-dashboard-optional-tabs-database-tables.html"
+                        <a href="https://svovk.github.io/how-not-to-lose-sanity-taking-mooc-lecture-notes.html"
                            rel="bookmark"
-                           title="Permalink to Agile PLM Dashboard Optional Tabs - database tables">
-                            Agile PLM Dashboard Optional Tabs - database tables
+                           title="Permalink to How not to lose sanity taking MOOC lecture notes">
+                            How not to lose sanity taking MOOC lecture notes
                         </a>
                         <small>
 <div class="post-info">
     <div class="publish-info-block">
         <small>
             <span class="published">
-                <i class="fa fa-calendar padding-small"></i><time datetime="2018-05-19T00:14:00+03:00"> Sat 19 May 2018</time>
+                <i class="fa fa-calendar padding-small"></i><time datetime="2019-05-02T11:36:00+03:00"> Thu 02 May 2019</time>
             </span>
             <span class="category">
-                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/agile-plm.html">Agile PLM</a>
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/misc.html">Misc</a>
             </span>
             <span class="tags">
                 <i class="fa fa-tags padding-small"></i>
-                <a href="https://svovk.github.io/tag/agile-plm.html">Agile PLM</a> /                 <a href="https://svovk.github.io/tag/agile-database-schema.html">Agile Database Schema</a>            </span>
+                <a href="https://svovk.github.io/tag/tex.html">TeX</a> /                 <a href="https://svovk.github.io/tag/markdown.html">Markdown</a> /                 <a href="https://svovk.github.io/tag/pandoc.html">Pandoc</a>            </span>
         </small>
     </div>
 </div><!-- /.post-info -->                        </small>
@@ -218,73 +218,49 @@
         <div class="row">
             <div class="col-lg-9">
                 <div class="entry-content">
-                    <p>Recently I was working on a data issue which prevented a person from using Optional Tab 1 of his Dashboard. When the user clicked on the tab, Agile showed "Object does not exists" error and nothing else appeared. Researching this issue brought me to understanding of some relations in Agile DB Schema which I would like to discuss in this post.</p>
-<p>I don't think Dashboard DB structure is something that Oracle changes frequently, but I should mention that I worked on the issue in Agile PLM 9.3.6.4 and didn't validate if all relations are the same in any other PLM versions.</p>
-<h2>Dashboard</h2>
-<p>As for many other setup entities, database schema journey starts with one of the most basic tables in Agile PLM schema - <code>nodetable</code>:</p>
-<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="n">lpad</span><span class="p">(</span><span class="s1">&#39;+ &#39;</span><span class="p">,</span><span class="k">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span> <span class="n">description</span> <span class="n">node</span>
-<span class="k">FROM</span> <span class="n">nodetable</span> <span class="n">n</span>
-<span class="k">CONNECT</span> <span class="k">BY</span> <span class="n">n</span><span class="p">.</span><span class="n">parentId</span> <span class="o">=</span> <span class="k">PRIOR</span> <span class="n">n</span><span class="p">.</span><span class="n">id</span>
-<span class="k">START</span> <span class="k">WITH</span> <span class="n">n</span><span class="p">.</span><span class="n">description</span> <span class="o">=</span> <span class="s1">&#39;Dashboard Management&#39;</span>
-</pre></div>
-
-
-<p>This query shows us hierarchy under Dashboard Management node <code>(Java Client) Admin -&gt; System Settings -&gt; Dashboard Management</code>. Here is what it shows in my environment:</p>
-<div class="highlight"><pre><span></span>ID          NODE
-----------  ----------------------
-2000000001  + Dashboard Management  
-...
-2000000111   + Optional Tab 1
-2000000112    + Table 1
-2000000113    + Table 2
-2000000114    + Table 3
-2000000115    + Table 4
-...
-</pre></div>
-
-
-<p>Now we have node ids and may query what Optional Tab 1 tables actually display:</p>
-<div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">tableId</span><span class="p">,</span> <span class="n">queryId</span><span class="p">,</span> <span class="n">tableName</span><span class="p">,</span> <span class="n">userId</span>
-<span class="k">FROM</span> <span class="n">query_table</span>
-<span class="k">WHERE</span> <span class="n">tableId</span> <span class="k">IN</span> <span class="p">(</span><span class="mi">2000000111</span><span class="p">,</span> <span class="mi">2000000112</span><span class="p">,</span> <span class="mi">2000000113</span><span class="p">,</span> <span class="mi">2000000114</span><span class="p">)</span>
-  <span class="k">AND</span> <span class="n">userId</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">userId</span><span class="o">&gt;</span>
-</pre></div>
-
-
-<p>Few important points about <code>query_table</code>:</p>
+                    <p>This problem was a big deal for me. I like MOOCs, and I find it very valuable to make some notes during a course. Although it took time to find a way that fits my needs:</p>
 <ul>
-<li>As you know, each user sets content of his/her optional tab tables. That is why <code>query_table</code> has <code>userId</code> column (it is a foreign key to <code>agileuser</code> table).</li>
-<li><code>queryId</code> is a foreign key to <code>query</code> table</li>
-<li><code>tableName</code> is a user-friendly name of the table</li>
+<li>ability to copy-paste images</li>
+<li>easy way to insert math formulas</li>
+<li>output with a table of contents</li>
+<li>spellchecking</li>
 </ul>
-<p>Note: when you define a custom dashboard table with query for all users <code>userId</code> will be set to NULL.</p>
-<h2>Issue</h2>
-<p>In my case, root cause of the error was following - one of the query ids specified in <code>query_table</code> wasn't actually defined in <code>query</code> table. To fix the problem, I deleted <code>query_table</code> row that had inconsistent data which moved the tab table to no-query-assigned state.</p>
-<p>Please note that it is not recommended to apply any data fixes to Agile Database Schema without confirming with Oracle that they are valid.</p>
-<h2>Other tables to check</h2>
-<p>When you see an issue like that it always worth to check other tables that might have orphan records referring to the same missing row. Here are few additional tables that might refer to a query id:</p>
+<p>I tried numerous approaches, but each of them had some downsides:</p>
+<ol>
+<li>Word - didn't like the way to include formulas. It took much more time to figure out how to enter a formula compared to LaTeX.</li>
+<li>LibreOffice also had a problem with formulas plus image rendering was glitchy (at least on mac)</li>
+<li>LaTeX was good for formulas although its syntax is too wordy. </li>
+</ol>
+<p>I decided to fix the LaTeX approach as it looked like the most flexible one. Fortunately, it wasn't very hard to do that.</p>
+<h2>Processing</h2>
+<p>As I said writing directly in LaTeX was too verbose for me. At least for the purpose of making lecture notes. Although, I believed that LaTeX is a good option. It is an industry standard, has a very good reputation and it is definitely powerful enough to cover all my needs.</p>
+<p>The thing is that it is obviously too powerful for that purpose and I don't need all of the LaTeX just to take notes.  But there is a minimalistic format that looks like a good fit - Markdown. Stop. Why don't just convert Markdown to LaTeX? And there is a good tool for that - <strong>Pandoc</strong>. Here is how it may be used for the conversion:</p>
+<div class="highlight"><pre><span></span>pandoc --listings -s -f markdown -t latex -o output_file.tex input_file.md
+</pre></div>
+
+
+<p>Note: <code>-s</code> option is to generate header and footer. </p>
+<p>Pandoc also is capable of converting directly to PDF (via tex engine)</p>
+<div class="highlight"><pre><span></span>pandoc --listings --pdf-engine=xelatex -f markdown -o output_file.pdf input_file.md
+</pre></div>
+
+
+<p>Options used:</p>
 <ul>
-<li>
-<p><code>select_list</code> table contains information about fields to be displayed</p>
-<div class="highlight"><pre><span></span>select * select_list where query_id = &lt;queryId&gt;
-</pre></div>
-
-
+<li><code>--pdf-engine=xelatex</code> is to use XeLaTeX engine which has few advantages over PdfLaTeX: may use system fonts, has better support for non-latin character encodings.</li>
+<li><code>--listings</code> Use the listings package for LaTeX code blocks</li>
+<li>if you would like to include a custom configuration into your latex file you may use <code>--include-in-header=listings-setup.tex</code></li>
+</ul>
+<h3>Software setup</h3>
+<p>You basically need 3 components:</p>
+<ul>
+<li><strong>Pandoc</strong> may be installed with homebrew: <code>brew install pandoc</code></li>
+<li><strong>TeX</strong> distribution. I use <a href="http://www.tug.org/mactex/index.html">MacTeX</a>. I had to install a couple of additional packages as pandoc printed some error messages while converting to PDF:<ul>
+<li><code>tlmgr install ucharcat</code> (the error was <code>! LaTeX Error: File</code>ucharcat.sty' not found.`)</li>
+<li><code>tlmgr install lm-math</code> (the error was <code>! The font "latinmodern-math" cannot be found.</code>)</li>
+</ul>
 </li>
-<li>
-<p><code>foldering</code> table stores information about folders under which queries are stored</p>
-<div class="highlight"><pre><span></span>select * from foldering where objectid = &lt;queryId&gt;
-</pre></div>
-
-
-</li>
-<li>
-<p><code>criteria</code> table contains information about query filters</p>
-<div class="highlight"><pre><span></span>select * from criteria where query_id = &lt;queryId&gt;
-</pre></div>
-
-
-</li>
+<li>I use <strong>VimR</strong> as an editor. It has Markdown highlighting, Markdown preview, spellchecking and handy <a href="https://github.com/ferrine/md-img-paste.vim">md-img-paste</a> plugin which lets you insert images from the buffer by pressing <code>\p</code> (to be formal <code>&lt;leader&gt;p</code>). If you don't like VIM I am sure that there are plenty of other good editors. </li>
 </ul>
                 </div>
                 <footer class="text-right">
@@ -346,8 +322,8 @@
     /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
     var disqus_shortname = 'sergeivovk'; // required: replace example with your forum shortname
 
-            var disqus_identifier = 'agile-plm-dashboard-optional-tabs-database-tables';
-        var disqus_url = 'https://svovk.github.io/agile-plm-dashboard-optional-tabs-database-tables.html';
+            var disqus_identifier = 'how-not-to-lose-sanity-taking-mooc-lecture-notes';
+        var disqus_url = 'https://svovk.github.io/how-not-to-lose-sanity-taking-mooc-lecture-notes.html';
 
     var disqus_config = function () {
         this.language = "en";
