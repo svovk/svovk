@@ -1,5 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Oracle Database</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/oracle-database.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2018-10-21T10:00:00+03:00</updated><entry><title>Transaction invalidation in PostgreSQL</title><link href="https://svovk.github.io/transaction-invalidation-in-postgresql.html" rel="alternate"></link><published>2018-10-21T10:00:00+03:00</published><updated>2018-10-21T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-21:/transaction-invalidation-in-postgresql.html</id><summary type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a lot of distinctions between these databases. In this post, I would like to discuss one of them.&lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Sergei Vovk | Blog - Oracle Database</title><link href="https://svovk.github.io/" rel="alternate"></link><link href="https://svovk.github.io/feeds/oracle-database.atom.xml" rel="self"></link><id>https://svovk.github.io/</id><updated>2019-05-03T10:00:00+03:00</updated><entry><title>How to find and update an element in JSON array</title><link href="https://svovk.github.io/how-to-find-and-update-an-element-in-json-array.html" rel="alternate"></link><published>2019-05-03T10:00:00+03:00</published><updated>2019-05-03T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2019-05-03:/how-to-find-and-update-an-element-in-json-array.html</id><summary type="html">&lt;p&gt;PostgreSQL has first class support for JSON although I found the following task challenging to be expressed in available syntax. Suppose there is an array of serialized objects where each array element has&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;desc&lt;/code&gt; attribute which shows which object it is&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;val&lt;/code&gt; attribute containing the object data itself&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The task …&lt;/p&gt;</summary><content type="html">&lt;p&gt;PostgreSQL has first class support for JSON although I found the following task challenging to be expressed in available syntax. Suppose there is an array of serialized objects where each array element has&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;desc&lt;/code&gt; attribute which shows which object it is&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;val&lt;/code&gt; attribute containing the object data itself&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The task is simple: update some data within &lt;code&gt;val&lt;/code&gt; of a particular object. &lt;/p&gt;
+&lt;p&gt;Take a look at the following sample data. Let's say we need to update &lt;code&gt;quantity&lt;/code&gt; attribute of &lt;code&gt;Object5&lt;/code&gt; but the tricky part is that we are not sure which index in the array &lt;code&gt;Object5&lt;/code&gt; has.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;create table test_json (id SERIAL, json_data JSONB);
+
+insert into test_json (json_data) values (
+&amp;#39;[
+  {
+    &amp;quot;desc&amp;quot;: &amp;quot;Object5&amp;quot;,
+    &amp;quot;val&amp;quot;: {
+      &amp;quot;enabled&amp;quot;: false,
+      &amp;quot;quantity&amp;quot;: 0,
+      &amp;quot;type&amp;quot;: &amp;quot;you-type&amp;quot;
+    }
+  },
+  {
+    &amp;quot;desc&amp;quot;: &amp;quot;Object2&amp;quot;,
+    &amp;quot;val&amp;quot;: {
+      &amp;quot;counter&amp;quot;: {
+        &amp;quot;blue&amp;quot;: 2,
+        &amp;quot;green&amp;quot;: 1
+      }
+    }
+  }
+]&amp;#39;);
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Long story for short here is the approach that I used:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;update test_json d
+  set json_data = jsonb_set(
+           d.json_data,
+           array[
+               (select ord - 1 from jsonb_array_elements(d.json_data) WITH ORDINALITY arr(opt, ord) where opt -&amp;gt;&amp;gt; &amp;#39;desc&amp;#39; = &amp;#39;Object5&amp;#39;)::text,
+               &amp;#39;val&amp;#39;,
+               &amp;#39;quantity&amp;#39;
+           ],
+           &amp;#39;5&amp;#39;::jsonb,
+           false)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;jsonb_set&lt;/code&gt; is a function that creates a new jsonb object with some attribute modified&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;array&lt;/code&gt; containing full path to the attribute that we want to update&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;(select ord - 1 from jsonb_array_elements(d.json_data) WITH ORDINALITY arr(opt, ord) where opt -&amp;gt;&amp;gt; 'desc' = 'Object5')&lt;/code&gt; is a subquery to figure out where within the array &lt;code&gt;Object5&lt;/code&gt; is located&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As for me, the approach looks overwhelming for such simple task but it looks like there is no other way to do it.&lt;/p&gt;</content><category term="PostgreSQL"></category></entry><entry><title>Transaction invalidation in PostgreSQL</title><link href="https://svovk.github.io/transaction-invalidation-in-postgresql.html" rel="alternate"></link><published>2018-10-21T10:00:00+03:00</published><updated>2018-10-21T10:00:00+03:00</updated><author><name>Sergei Vovk</name></author><id>tag:svovk.github.io,2018-10-21:/transaction-invalidation-in-postgresql.html</id><summary type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a …&lt;/p&gt;</summary><content type="html">&lt;p&gt;A month ago I started to work on a product where PostgreSQL is used as a primary database. Before that, I closely worked with Oracle DB. No doubt, it is a great product but I find very interesting to focus on another RDBMS implementation. As I expected, there are a lot of distinctions between these databases. In this post, I would like to discuss one of them.&lt;/p&gt;
 &lt;h2&gt;Statement-level rollback&lt;/h2&gt;
 &lt;p&gt;Oracle (and in fact most of other RDBMS that I know) does a thing called statement-level rollback. In few words, it means that if some SQL statement fails with an exception, it will be rolled back. If the statement happened to be in a transaction, it also will be rolled back but the transaction itself will remain valid. Of course, user will be informed about the problem. Although the user will still have the ability to commit valid changes that were(and will be) made in the transaction.&lt;/p&gt;
 &lt;h3&gt;Test - Oracle&lt;/h3&gt;

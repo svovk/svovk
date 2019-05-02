@@ -6,10 +6,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="keywords" content="Pandas" />
+        <meta name="author" content="Sergei Vovk" />
+        <meta name="keywords" content="PostgreSQL" />
+        <meta name="description" content="PostgreSQL has first class support for JSON although I found the following task challenging to be expressed in available syntax. Suppose there is an array of serialized objects where each array element has desc attribute which shows which object it is val attribute containing the object data itself The task …" />
 
 
-    <title>Pandas - Sergei Vovk | Blog</title>
+    <title>How to find and update an element in JSON array - Sergei Vovk | Blog</title>
 
         <link rel="stylesheet" href="https://svovk.github.io/theme/css/bootstrap.min.css" type="text/css" />
 
@@ -153,7 +155,7 @@
                             <span class="badge pull-right categorybadge">1</span>
                         </a>
                     </li>
-                    <li >
+                    <li class="active">
                         <a href="https://svovk.github.io/category/oracle-database.html">
                             <i class="fa fa-folder-open padding-small"></i>
                             Oracle Database
@@ -182,23 +184,108 @@
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-<div class="row">
-    <div class="col-lg-9">
-        <header class="page-header">
-            <h1>Articles featuring Pandas</h1>
-        </header>
+<section id="content">
+    <article>
+        <div class="row">
+            <div class="col-lg-9">
+                <header class="page-header">
+                    <h1>
+                        <a href="https://svovk.github.io/how-to-find-and-update-an-element-in-json-array.html"
+                           rel="bookmark"
+                           title="Permalink to How to find and update an element in JSON array">
+                            How to find and update an element in JSON array
+                        </a>
+                        <small>
+<div class="post-info">
+    <div class="publish-info-block">
+        <small>
+            <span class="published">
+                <i class="fa fa-calendar padding-small"></i><time datetime="2019-05-03T10:00:00+03:00"> Fri 03 May 2019</time>
+            </span>
+            <span class="category">
+                <i class="fa fa-folder-open padding-small"></i><a href="https://svovk.github.io/category/oracle-database.html">Oracle Database</a>
+            </span>
+            <span class="tags">
+                <i class="fa fa-tags padding-small"></i>
+                <a href="https://svovk.github.io/tag/postgresql.html">PostgreSQL</a>            </span>
+        </small>
     </div>
-</div>
-<div class="row">
-    <div class="col-lg-9">
-            <article>
-                <h4>
-                    <time datetime="2018-05-07T10:20:00+03:00"> Mon 07 May 2018</time>
-                    <a href="https://svovk.github.io/analyzing-agile-plm-log-files-with-python.html">Analyzing Agile PLM log files with Python</a>
-                </h4>
-            </article>
-    </div>
-</div>
+</div><!-- /.post-info -->                        </small>
+                    </h1>
+                </header>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="entry-content">
+                    <p>PostgreSQL has first class support for JSON although I found the following task challenging to be expressed in available syntax. Suppose there is an array of serialized objects where each array element has</p>
+<ul>
+<li><code>desc</code> attribute which shows which object it is</li>
+<li><code>val</code> attribute containing the object data itself</li>
+</ul>
+<p>The task is simple: update some data within <code>val</code> of a particular object. </p>
+<p>Take a look at the following sample data. Let's say we need to update <code>quantity</code> attribute of <code>Object5</code> but the tricky part is that we are not sure which index in the array <code>Object5</code> has.</p>
+<div class="highlight"><pre><span></span>create table test_json (id SERIAL, json_data JSONB);
+
+insert into test_json (json_data) values (
+&#39;[
+  {
+    &quot;desc&quot;: &quot;Object5&quot;,
+    &quot;val&quot;: {
+      &quot;enabled&quot;: false,
+      &quot;quantity&quot;: 0,
+      &quot;type&quot;: &quot;you-type&quot;
+    }
+  },
+  {
+    &quot;desc&quot;: &quot;Object2&quot;,
+    &quot;val&quot;: {
+      &quot;counter&quot;: {
+        &quot;blue&quot;: 2,
+        &quot;green&quot;: 1
+      }
+    }
+  }
+]&#39;);
+</pre></div>
+
+
+<p>Long story for short here is the approach that I used:</p>
+<div class="highlight"><pre><span></span>update test_json d
+  set json_data = jsonb_set(
+           d.json_data,
+           array[
+               (select ord - 1 from jsonb_array_elements(d.json_data) WITH ORDINALITY arr(opt, ord) where opt -&gt;&gt; &#39;desc&#39; = &#39;Object5&#39;)::text,
+               &#39;val&#39;,
+               &#39;quantity&#39;
+           ],
+           &#39;5&#39;::jsonb,
+           false)
+</pre></div>
+
+
+<ul>
+<li><code>jsonb_set</code> is a function that creates a new jsonb object with some attribute modified</li>
+<li><code>array</code> containing full path to the attribute that we want to update</li>
+<li><code>(select ord - 1 from jsonb_array_elements(d.json_data) WITH ORDINALITY arr(opt, ord) where opt -&gt;&gt; 'desc' = 'Object5')</code> is a subquery to figure out where within the array <code>Object5</code> is located</li>
+</ul>
+<p>As for me, the approach looks overwhelming for such simple task but it looks like there is no other way to do it.</p>
+                </div>
+                <footer class="text-right">
+                    <p>- Sergei Vovk</p>
+                </footer>
+    <section id="comments" class="comments ">
+        <hr/>
+        <h2>Comments</h2>
+        <div id="disqus_thread"></div>
+        <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+            Disqus.</a></noscript>
+        <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </section>
+            </div>
+        </div>
+    </article>
+</section>
 <footer>
     <hr>
     <div class="row">
@@ -237,24 +324,27 @@
         })();
     </script>
     <!-- End Google Analytics Code -->
-<script>
-    function FadeInOnScroll(ObjectList){
-        ObjectList.each(function(i) {
-            var bottom_of_object = $(this).position().top + $(this).outerHeight();
-            var bottom_of_window = $(window).scrollTop() + $(window).height();
 
-            if( bottom_of_window > bottom_of_object ){
-                $(this).fadeTo(750,1);
-            }
-        });
-    }
+<!-- disqus -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'sergeivovk'; // required: replace example with your forum shortname
 
-    articles = $("article").fadeTo(0, 0.05);
-    FadeInOnScroll(articles)
+            var disqus_identifier = 'how-to-find-and-update-an-element-in-json-array';
+        var disqus_url = 'https://svovk.github.io/how-to-find-and-update-an-element-in-json-array.html';
 
-    $(window).scroll(function() {
-        FadeInOnScroll(articles)
-    });
+    var disqus_config = function () {
+        this.language = "en";
+    };
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
 </script>
+<!-- /disqus -->
 </body>
 </html>
